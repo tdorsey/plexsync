@@ -101,9 +101,8 @@ settings.read(CONFIG_PATH)
 account = MyPlexAccount()
 getServers(account)
 
-your_server_name = input("Your server: ") or settings.get('Servers', 'yours')
-their_server_name = input(
-    "Their server: ") or settings.get('Servers', 'theirs')
+your_server_name = input("Your server: ") or settings.get('servers', 'yours')
+their_server_name = input("Their server: ") or settings.get('servers', 'theirs')
 
 # returns a PlexServer instance
 your_server = account.resource(your_server_name).connect()
