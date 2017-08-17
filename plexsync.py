@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from plexapi.myplex import MyPlexAccount
 from plexapi.video import Episode, Movie, Show, Video
 from pprint import pprint
 from pathlib import Path
+import os
 import configparser
 import inspect
 import re
@@ -85,8 +86,8 @@ def printMedia(media, section):
  print('*******************')
 
 settings = configparser.ConfigParser()
-CONFIG_PATH = str(Path.home()) + '/.config/plexsync/config.ini'
-print(f"Reading configuration from {CONFIG_PATH}")
+CONFIG_PATH = str(os.path.join(Path.home(),'.config', 'plexsync','config.ini'))
+print(f"Reading configuration from {CONFIG_PATH} ")
 settings.read(CONFIG_PATH)
 
 account = MyPlexAccount()
