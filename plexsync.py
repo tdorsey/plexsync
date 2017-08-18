@@ -2,13 +2,13 @@
 
 import os
 import configparser
+import getpass
 import re
 
-from pprint import pprint
 from pathlib import Path
 
 from plexapi.myplex import MyPlexAccount
-from plexapi.video import Episode, Movie, Show, Video
+from plexapi.video import Video
 
 class APIObject(Video):
     def __init__(self, video):
@@ -36,6 +36,8 @@ class APIObject(Video):
     def __str__(self):
         return str(f"GUID is: {self.guid} \n Title is: {self.title}")
 
+def printHeaderLine():
+    print('*******************')
 
 def extractGUID(guid):
     if not guid:
@@ -60,36 +62,34 @@ def dump(obj):
 
 def getMedia(server, section):
     results = server.library.section(section).search()
-    l_title = []
+    api_objects = []
     if section == "Movies":
         for r in results:
             a = APIObject(r)
-            l_title.append(a)
-        return set(l_title)
+            api_objects.append(a)
+        return set(api_objects)
     elif section == "TV Shows":
         # Show objects don't have a GUID, so grab the first episode and read it from there
         # This is really inefficient, since to query a single episode, the python-plexapi creates a
         # query for all episodes, and then filters down to one
         for r in results:
-            episode = r.episodes()[0]
+            episode = next(iter(r.episodes() or []), None)
             a = APIObject(episode)
-            print(a)
-            l_title.append(a)
-        return set(l_title)
+            api_objects.append(a)
+        return set(api_objects)
 
     else:
         return "Invalid Section"
 
 
 def printMedia(media, section):
-    print('*******************')
-    print('\n')
-    print(str(len(media)) + section + '  they have')
-    print('\n')
+    count = len(media)
+    printHeaderLine()
+    print(f"They have {count} items in {section}")
+    printHeaderLine()
     for m in media:
-        pprint(m.title)
-    print('\n')
-    print('*******************')
+        print(m.title)
+    printHeaderLine()
 
 
 settings = configparser.ConfigParser()
@@ -98,10 +98,17 @@ CONFIG_PATH = str(os.path.join(
 print(f"Reading configuration from {CONFIG_PATH} ")
 settings.read(CONFIG_PATH)
 
-account = MyPlexAccount()
+username = input("MyPlex username:")
+password = getpass.getpass("MyPlex password:")
+
+if username and password:
+    account = MyPlexAccount(username, password)
+else:
+    account = MyPlexAccount()
+
 getServers(account)
 
-your_server_name = input("Your server: ") or settings.get('servers', 'yours')
+your_server_name =  input("Your server: ") or settings.get('servers', 'yours')
 their_server_name = input("Their server: ") or settings.get('servers', 'theirs')
 
 # returns a PlexServer instance
