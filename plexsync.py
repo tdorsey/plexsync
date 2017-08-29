@@ -4,20 +4,28 @@ import os
 import configparser
 import getpass
 import re
+import requests
+import enum
 
 from pathlib import Path
 
 from plexapi.myplex import MyPlexAccount
 from plexapi.video import Video
 
+class APIObjectType(enum.Enum):
+    Show = 1
+    Movie = 2
+   
 class APIObject(Video):
     def __init__(self, video):
 
         if video.type == "episode":
             self.title = video.show().title
+            self.type = APIObjectType.Show
         else:
             self.title = video.title
-        self.type
+            self.type = APIObjectType.Movie
+        
         self.guid = extractGUID(video.guid)
         self.qualityProfileId
         self.titleSlug
@@ -46,6 +54,11 @@ def extractGUID(guid):
     if match:
         return int(match.group())
 
+class ThirdParty(service, host, apiKey):
+    def __init__(self):
+        self.host = host
+        self.apiKey = apiKey
+        self.service = service
 
 def getServers(account):
     resources = account.resources()
@@ -91,11 +104,27 @@ def printMedia(media, section):
         print(m.title)
     printHeaderLine()
 
-def getSonarrAPIKey():
-     return settings.get('api-keys', 'sonarr') or print("Add your sonarr api key to the config file")
+def getThirdParty(service):
+    try:
+        apiKey = settings.get(service, 'api-key') 
+        host = settings.get(service, 'host')
+    except ConfigParser.Error:
+        print(f"Add your {service} api key to the config file")
+    return { ThirdParty(service, host, apiKey) }
 
-def getRadarrAPIKey():
-    return settings.get('api-keys', 'radarr') or print("Add your radarr api key to the config file")
+def sendMediaToThirdParty(media: list):
+    for m in media:
+        if m.type = APIObjectType.Movie:
+        provider =  getThirdParty(ThirdParty.Movie)
+        elif m.type = APIObjectType.Show:
+            provider = getThirdParty(ThirdParty.Show)
+        else:
+            print(f"Invalid APIObject Type {m.type}"})
+        
+        
+# sending post request and saving response as response object
+r = requests.post(url = API_ENDPOINT, data = data)
+   return {}
 
 settings = configparser.ConfigParser()
 CONFIG_PATH = str(os.path.join(
@@ -130,3 +159,7 @@ for section in sections:
     your_new_media = your_media - their_media
 
     printMedia(their_new_media, section)
+
+    wantedMedia = their_new_media
+
+    sendMediaToThirdParty(wantedMedia)
