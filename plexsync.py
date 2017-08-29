@@ -1,63 +1,30 @@
 #!/usr/bin/python3
 
-import os
-import configparser
+from plexapi.myplex import MyPlexAccount
+
 import getpass
 import re
+import enum
+import requests
+import urllib
 
-from pathlib import Path
+from apiobject import APIObject
+from base import *
+from thirdparty import ThirdParty
+from thirdparty import ThirdPartyService
 
-from plexapi.myplex import MyPlexAccount
-from plexapi.video import Video
+show_provider = ThirdParty(ThirdPartyService.Show)
+movie_provider = ThirdParty(ThirdPartyService.Movie)
 
-class APIObject(Video):
-    def __init__(self, video):
-
-        if video.type == "episode":
-            self.title = video.show().title
-        else:
-            self.title = video.title
-        self.type
-        self.guid = extractGUID(video.guid)
-        self.qualityProfileId
-        self.titleSlug
-        self.images = []
-        self.seasons = []
-
-    def __key(self):
-        return (self.guid)
-
-    def __eq__(x, y):
-        return x.__key() == y.__key()
-
-    def __hash__(self):
-        return hash(self.__key())
-
-    def __str__(self):
-        return str(f"GUID is: {self.guid} \n Title is: {self.title}")
 
 def printHeaderLine():
     print('*******************')
-
-def extractGUID(guid):
-    if not guid:
-        return
-    match = re.search(r'\d+', guid)
-    if match:
-        return int(match.group())
-
 
 def getServers(account):
     resources = account.resources()
     servers = filter(lambda x: x.provides == 'server', account.resources())
     for s in servers:
         print(s.name)
-
-
-def dump(obj):
-    for attr in dir(obj):
-        if hasattr(obj, attr):
-            print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
 
 def getMedia(server, section):
@@ -81,7 +48,6 @@ def getMedia(server, section):
     else:
         return "Invalid Section"
 
-
 def printMedia(media, section):
     count = len(media)
     printHeaderLine()
@@ -91,20 +57,40 @@ def printMedia(media, section):
         print(m.title)
     printHeaderLine()
 
+def createSearchTermFromMedia(media):
+    guid = media.guid
+    if media.isMovie():
+        return str(f"imdb:{guid}")
+    elif media.isShow():
+        return str(f"tvdb:{guid}")
 
-settings = configparser.ConfigParser()
-CONFIG_PATH = str(os.path.join(
-    Path.home(), '.config', 'plexsync', 'config.ini'))
-print(f"Reading configuration from {CONFIG_PATH} ")
-settings.read(CONFIG_PATH)
+def sendMediaToThirdParty(media: list):
+    for m in media:
+        m.fetchMissingData()
+        m.provider.createEntry(m)
 
-username = input("MyPlex username:")
-password = getpass.getpass("MyPlex password:")
+settings = getSettings()
+
+username =  input("MyPlex username:") or settings.get('auth', 'myplex_username')
+password = getpass.getpass("MyPlex password:") or settings.get('auth', 'myplex_password')
 
 if username and password:
     account = MyPlexAccount(username, password)
 else:
-    account = MyPlexAccount()
+    print("Set a username and passsword in the config file")
+    exit(1)
+
+
+
+tv_quality_profile =  input("TV Quality Profile:") or settings.get('sonarr', 'quality_profile')
+movie_quality_profile =  input("Movie Quality Profile:") or settings.get('radarr', 'quality_profile')
+
+if username and password:
+    account = MyPlexAccount(username, password)
+else:
+    print("Set a username and passsword in the config file")
+    exit(1)
+
 
 getServers(account)
 
@@ -125,3 +111,7 @@ for section in sections:
     your_new_media = your_media - their_media
 
     printMedia(their_new_media, section)
+
+    wantedMedia = their_new_media
+    #wantedMedia = my_list = [x for x in their_new_media if x.guid == 119174]    
+    sendMediaToThirdParty(wantedMedia)
