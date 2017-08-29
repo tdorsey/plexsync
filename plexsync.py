@@ -91,6 +91,11 @@ def printMedia(media, section):
         print(m.title)
     printHeaderLine()
 
+def getSonarrAPIKey():
+     return settings.get('api-keys', 'sonarr') or print("Add your sonarr api key to the config file")
+
+def getRadarrAPIKey():
+    return settings.get('api-keys', 'radarr') or print("Add your radarr api key to the config file")
 
 settings = configparser.ConfigParser()
 CONFIG_PATH = str(os.path.join(
