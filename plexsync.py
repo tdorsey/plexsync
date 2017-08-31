@@ -110,7 +110,7 @@ def getThirdParty(service):
         host = settings.get(service, 'host')
     except ConfigParser.Error:
         print(f"Add your {service} api key to the config file")
-    return { ThirdParty(service, host, apiKey) }
+    return ThirdParty(service, host, apiKey) 
 
 def sendMediaToThirdParty(media: list):
     for m in media:
@@ -120,10 +120,24 @@ def sendMediaToThirdParty(media: list):
             provider = getThirdParty(ThirdParty.Show)
         else:
             print(f"Invalid APIObject Type {m.type}"})
-        
+
+        headers = {'X-Api-Key': provider.apiKey}
         
 # sending post request and saving response as response object
-r = requests.post(url = API_ENDPOINT, data = data)
+ #tvdbId (int) title (string) qualityProfileId (int) titleSlug (string) images (array) seasons (array)
+ #{ tvdbId: '248682',
+ # title: 'New Girl',
+ # qualityProfileId: 5,
+ # titleSlug: 'new-girl',
+ # seasons:
+ #  [ { seasonNumber: '1', monitored: 'false' },
+ #    { seasonNumber: '2', monitored: 'false' },
+ #    { seasonNumber: '3', monitored: 'false' },
+ #    { seasonNumber: '4', monitored: 'true' } ],
+ # path: 'c:\\media\\tv\\New Girl',
+ # seasonFolder: true,
+ # monitored: true }
+r = requests.post(url = provider.host + '/api', data = data, headers = headers)
    return {}
 
 settings = configparser.ConfigParser()
