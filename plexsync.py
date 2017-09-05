@@ -8,7 +8,7 @@ import getpass
 import re
 import enum
 import requests
-
+import urllib
 
 from plexapi.myplex import MyPlexAccount
 from plexapi.video import Video
@@ -40,6 +40,12 @@ class APIObject(Video):
         self.images = []
         self.seasons = []
 
+    def isMovie(self):
+        return self.type == APIObjectType.Movie
+
+    def isShow(self):
+        return self.type == APIObjectType.Show
+
     def __key(self):
         return (self.guid)
 
@@ -51,6 +57,10 @@ class APIObject(Video):
 
     def __str__(self):
         return str(f"GUID is: {self.guid} \n Title is: {self.title}")
+    
+    def setMissingData(self, queried_data):
+       print(f"queried_data is: {queried_data}")
+       self.titleSlug = queried_data.titleSlug
 
 def printHeaderLine():
     print('*******************')
@@ -129,24 +139,45 @@ def getThirdParty(service):
  # seasonFolder: true,
  # monitored: true }
 
+def createSearchTermFromMedia(media):
+    guid = media.guid
+    if media.isMovie():
+       return str(f"imdb:{guid}")
+    elif media.isShow():
+       return str(f"tvdb:{guid}")
+
+def lookupMedia(media):
+    if media.isShow():
+        provider = getThirdParty("sonarr")
+        endpoint_url = str(f"{provider.host}/api/series/lookup")
+    elif media.isMovie():
+        provider = getThirdParty("radarr")
+        endpoint_url = str(f"{provider.host}/api/series/lookup") 
+
+    headers = {'X-Api-Key': provider.apiKey}   
+    search_term = createSearchTermFromMedia(media)
+    param = {'term' : search_term}
+
+    response = requests.get(url = endpoint_url, params = param, headers = headers)
+    print(f"Searching for: {media.title} - with {search_term}")        
+    return response.json()
+
 def sendMediaToThirdParty(media: list):
     for m in media:
-        if m.type == APIObjectType.Movie:
+        if m.isMovie():
             provider =  getThirdParty("radarr")
-        elif m.type == APIObjectType.Show:
+        elif m.isShow():
             provider = getThirdParty("sonarr")
         else:
             print(f"Invalid APIObject Type {m.type}")
 
-        headers = {'X-Api-Key': provider.apiKey}
+#        escaped_title = urllib.parse.quote(m.title)   
+        if m.isShow():
+           queried_data = lookupMedia(m)
+	   first_item = next((x for x in queried_data), None)
+           m.setMissingData(first_item)
+
         
-
-
-        lookup_data = {'term' : m.title} 
-        lookup = requests.get(url = provider.host + '/api/series/lookup', data = lookup_data, headers = headers)
-        dump(lookup)
-        #r = requests.post(url = provider.host + '/api', data = data, headers = headers)
-        return {}
 
 settings = configparser.ConfigParser()
 CONFIG_PATH = str(os.path.join(
