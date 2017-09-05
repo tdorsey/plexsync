@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
+from pathlib import Path
+
 import os
 import configparser
 import getpass
 import re
-import requests
 import enum
+import requests
 
-from pathlib import Path
 
 from plexapi.myplex import MyPlexAccount
 from plexapi.video import Video
@@ -15,7 +16,14 @@ from plexapi.video import Video
 class APIObjectType(enum.Enum):
     Show = 1
     Movie = 2
-   
+class ThirdPartyService(enum.Enum):
+    Show = "sonarr"
+    Movie = "radarr"
+class ThirdParty():
+    def __init__(self, service, host, apiKey):
+        self.host = host
+        self.apiKey = apiKey
+        self.service = service
 class APIObject(Video):
     def __init__(self, video):
 
@@ -27,8 +35,8 @@ class APIObject(Video):
             self.type = APIObjectType.Movie
         
         self.guid = extractGUID(video.guid)
-        self.qualityProfileId
-        self.titleSlug
+       # self.qualityProfileId
+       # self.titleSlug
         self.images = []
         self.seasons = []
 
@@ -54,11 +62,6 @@ def extractGUID(guid):
     if match:
         return int(match.group())
 
-class ThirdParty(service, host, apiKey):
-    def __init__(self):
-        self.host = host
-        self.apiKey = apiKey
-        self.service = service
 
 def getServers(account):
     resources = account.resources()
@@ -108,21 +111,9 @@ def getThirdParty(service):
     try:
         apiKey = settings.get(service, 'api-key') 
         host = settings.get(service, 'host')
-    except ConfigParser.Error:
+    except:
         print(f"Add your {service} api key to the config file")
     return ThirdParty(service, host, apiKey) 
-
-def sendMediaToThirdParty(media: list):
-    for m in media:
-        if m.type = APIObjectType.Movie:
-        provider =  getThirdParty(ThirdParty.Movie)
-        elif m.type = APIObjectType.Show:
-            provider = getThirdParty(ThirdParty.Show)
-        else:
-            print(f"Invalid APIObject Type {m.type}"})
-
-        headers = {'X-Api-Key': provider.apiKey}
-        
 # sending post request and saving response as response object
  #tvdbId (int) title (string) qualityProfileId (int) titleSlug (string) images (array) seasons (array)
  #{ tvdbId: '248682',
@@ -137,8 +128,25 @@ def sendMediaToThirdParty(media: list):
  # path: 'c:\\media\\tv\\New Girl',
  # seasonFolder: true,
  # monitored: true }
-r = requests.post(url = provider.host + '/api', data = data, headers = headers)
-   return {}
+
+def sendMediaToThirdParty(media: list):
+    for m in media:
+        if m.type == APIObjectType.Movie:
+            provider =  getThirdParty("radarr")
+        elif m.type == APIObjectType.Show:
+            provider = getThirdParty("sonarr")
+        else:
+            print(f"Invalid APIObject Type {m.type}")
+
+        headers = {'X-Api-Key': provider.apiKey}
+        
+
+
+        lookup_data = {'term' : m.title} 
+        lookup = requests.get(url = provider.host + '/api/series/lookup', data = lookup_data, headers = headers)
+        dump(lookup)
+        #r = requests.post(url = provider.host + '/api', data = data, headers = headers)
+        return {}
 
 settings = configparser.ConfigParser()
 CONFIG_PATH = str(os.path.join(
