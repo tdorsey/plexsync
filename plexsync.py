@@ -21,12 +21,6 @@ def getServers(account):
         print(s.name)
 
 
-def dump(obj):
-    for attr in dir(obj):
-        if hasattr(obj, attr):
-            print("obj.%s = %s" % (attr, getattr(obj, attr)))
-
-
 def getMedia(server, section):
     results = server.library.section(section).search()
     api_objects = []
