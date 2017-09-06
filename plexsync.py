@@ -173,10 +173,9 @@ def sendMediaToThirdParty(media: list):
 
 #        escaped_title = urllib.parse.quote(m.title)   
         if m.isShow():
-           queried_data = lookupMedia(m)
-	   first_item = next((x for x in queried_data), None)
-           m.setMissingData(first_item)
-
+            queried_data = lookupMedia(m)
+            first_item = next((x for x in queried_data), None)  
+            m.setMissingData(first_item)
         
 
 settings = configparser.ConfigParser()
@@ -185,8 +184,12 @@ CONFIG_PATH = str(os.path.join(
 print(f"Reading configuration from {CONFIG_PATH} ")
 settings.read(CONFIG_PATH)
 
-username = input("MyPlex username:")
-password = getpass.getpass("MyPlex password:")
+#Set plexauth configuration in our config file
+os.environ["PLEXAPI_CONFIG_PATH"] = CONFIG_PATH
+
+
+username =  input("MyPlex username:") or settings.get('auth', 'myplex_username')
+password = getpass.getpass("MyPlex password:") or settings.get('auth', 'myplex_password')
 
 if username and password:
     account = MyPlexAccount(username, password)
