@@ -23,6 +23,7 @@ class APIObject(Video):
             self.provider = movie_provider
         
         self.guid = self._extractGUID(video.guid)
+        self.search_term = self._createSearchTerm()
        # self.qualityProfileId
        # self.titleSlug
         self.images = []
@@ -34,22 +35,12 @@ class APIObject(Video):
     def isShow(self):
         return self.type == APIObjectType.Show
 
-    def _createSearchTermFromMedia(self):
+    def _createSearchTerm(self):
         if self.isMovie():
           return str(f"imdb:{self.guid}")
         elif self.isShow():
           return str(f"tvdb:{self.guid}")
     
-    def _lookupMedia(self):
-    
-       headers = {'X-Api-Key': self.provider.apiKey}   
-       search_term = self._createSearchTermFromMedia()
-       param = {'term' : search_term}
-
-       response = requests.get(url = self.provider.lookup_url, params = param, headers = headers)
-       print(f"Searching for: {self.title} - with {search_term}")        
-       return response.json()
-
     def __key(self):
         return (self.guid)
 
@@ -63,7 +54,7 @@ class APIObject(Video):
         return str(f"GUID is: {self.guid} \n Title is: {self.title}")
     
     def fetchMissingData(self):
-        lookup_json = self._lookupMedia()
+        lookup_json = self.provider.lookupMedia(self)
         #The media lookup returns an array of results, but we only need the first since we are explicitly 
         #querying the id
         first_item = next((x for x in lookup_json), None)
