@@ -4,9 +4,11 @@ import urllib
 
 from plexapi.video import Video
 from base import * 
+from thirdparty import ThirdParty
+from thirdparty import ThirdPartyService
 
-show_provider = ThirdParty("sonarr")
-movie_provider = ThirdParty("radarr")
+show_provider = ThirdParty(ThirdPartyService.Show.value)
+movie_provider = ThirdParty(ThirdPartyService.Movie.value)
 
 class APIObject(Video):
     def __init__(self, video):
