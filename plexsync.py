@@ -1,77 +1,18 @@
 #!/usr/bin/python3
 
-from pathlib import Path
+from plexapi.myplex import MyPlexAccount
 
-import os
-import configparser
 import getpass
 import re
 import enum
 import requests
 import urllib
 
-from plexapi.myplex import MyPlexAccount
-from plexapi.video import Video
-
-class APIObjectType(enum.Enum):
-    Show = 1
-    Movie = 2
-class ThirdPartyService(enum.Enum):
-    Show = "sonarr"
-    Movie = "radarr"
-class ThirdParty():
-    def __init__(self, service, host, apiKey):
-        self.host = host
-        self.apiKey = apiKey
-        self.service = service
-class APIObject(Video):
-    def __init__(self, video):
-
-        if video.type == "episode":
-            self.title = video.show().title
-            self.type = APIObjectType.Show
-        else:
-            self.title = video.title
-            self.type = APIObjectType.Movie
-        
-        self.guid = extractGUID(video.guid)
-       # self.qualityProfileId
-       # self.titleSlug
-        self.images = []
-        self.seasons = []
-
-    def isMovie(self):
-        return self.type == APIObjectType.Movie
-
-    def isShow(self):
-        return self.type == APIObjectType.Show
-
-    def __key(self):
-        return (self.guid)
-
-    def __eq__(x, y):
-        return x.__key() == y.__key()
-
-    def __hash__(self):
-        return hash(self.__key())
-
-    def __str__(self):
-        return str(f"GUID is: {self.guid} \n Title is: {self.title}")
-    
-    def setMissingData(self, queried_data):
-       print(f"queried_data is: {queried_data}")
-       self.titleSlug = queried_data.titleSlug
+from apiobject import APIObject
+from base import *
 
 def printHeaderLine():
     print('*******************')
-
-def extractGUID(guid):
-    if not guid:
-        return
-    match = re.search(r'\d+', guid)
-    if match:
-        return int(match.group())
-
 
 def getServers(account):
     resources = account.resources()
@@ -117,13 +58,6 @@ def printMedia(media, section):
         print(m.title)
     printHeaderLine()
 
-def getThirdParty(service):
-    try:
-        apiKey = settings.get(service, 'api-key') 
-        host = settings.get(service, 'host')
-    except:
-        print(f"Add your {service} api key to the config file")
-    return ThirdParty(service, host, apiKey) 
 # sending post request and saving response as response object
  #tvdbId (int) title (string) qualityProfileId (int) titleSlug (string) images (array) seasons (array)
  #{ tvdbId: '248682',
@@ -146,47 +80,12 @@ def createSearchTermFromMedia(media):
     elif media.isShow():
        return str(f"tvdb:{guid}")
 
-def lookupMedia(media):
-    if media.isShow():
-        provider = getThirdParty("sonarr")
-        endpoint_url = str(f"{provider.host}/api/series/lookup")
-    elif media.isMovie():
-        provider = getThirdParty("radarr")
-        endpoint_url = str(f"{provider.host}/api/series/lookup") 
-
-    headers = {'X-Api-Key': provider.apiKey}   
-    search_term = createSearchTermFromMedia(media)
-    param = {'term' : search_term}
-
-    response = requests.get(url = endpoint_url, params = param, headers = headers)
-    print(f"Searching for: {media.title} - with {search_term}")        
-    return response.json()
-
 def sendMediaToThirdParty(media: list):
     for m in media:
-        if m.isMovie():
-            provider =  getThirdParty("radarr")
-        elif m.isShow():
-            provider = getThirdParty("sonarr")
-        else:
-            print(f"Invalid APIObject Type {m.type}")
-
-#        escaped_title = urllib.parse.quote(m.title)   
         if m.isShow():
-            queried_data = lookupMedia(m)
-            first_item = next((x for x in queried_data), None)  
-            m.setMissingData(first_item)
-        
+            m.fetchMissingData()
 
-settings = configparser.ConfigParser()
-CONFIG_PATH = str(os.path.join(
-    Path.home(), '.config', 'plexsync', 'config.ini'))
-print(f"Reading configuration from {CONFIG_PATH} ")
-settings.read(CONFIG_PATH)
-
-#Set plexauth configuration in our config file
-os.environ["PLEXAPI_CONFIG_PATH"] = CONFIG_PATH
-
+settings = getSettings()
 
 username =  input("MyPlex username:") or settings.get('auth', 'myplex_username')
 password = getpass.getpass("MyPlex password:") or settings.get('auth', 'myplex_password')
@@ -194,7 +93,8 @@ password = getpass.getpass("MyPlex password:") or settings.get('auth', 'myplex_p
 if username and password:
     account = MyPlexAccount(username, password)
 else:
-    account = MyPlexAccount()
+    print("Set a username and passsword in the config file")
+    exit(1)
 
 getServers(account)
 
