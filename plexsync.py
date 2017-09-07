@@ -52,27 +52,12 @@ def printMedia(media, section):
         print(m.title)
     printHeaderLine()
 
-# sending post request and saving response as response object
- #tvdbId (int) title (string) qualityProfileId (int) titleSlug (string) images (array) seasons (array)
- #{ tvdbId: '248682',
- # title: 'New Girl',
- # qualityProfileId: 5,
- # titleSlug: 'new-girl',
- # seasons:
- #  [ { seasonNumber: '1', monitored: 'false' },
- #    { seasonNumber: '2', monitored: 'false' },
- #    { seasonNumber: '3', monitored: 'false' },
- #    { seasonNumber: '4', monitored: 'true' } ],
- # path: 'c:\\media\\tv\\New Girl',
- # seasonFolder: true,
- # monitored: true }
-
 def createSearchTermFromMedia(media):
     guid = media.guid
     if media.isMovie():
-       return str(f"imdb:{guid}")
+        return str(f"imdb:{guid}")
     elif media.isShow():
-       return str(f"tvdb:{guid}")
+        return str(f"tvdb:{guid}")
 
 def sendMediaToThirdParty(media: list):
     for m in media:
