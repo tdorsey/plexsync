@@ -3,12 +3,12 @@ import requests
 import urllib
 
 from plexapi.video import Video
-from base import * 
+from base import *
 from thirdparty import ThirdParty
 from thirdparty import ThirdPartyService
 
-show_provider = ThirdParty(ThirdPartyService.Show.value)
-movie_provider = ThirdParty(ThirdPartyService.Movie.value)
+show_provider = ThirdParty(ThirdPartyService.Show)
+movie_provider = ThirdParty(ThirdPartyService.Movie)
 
 class APIObject(Video):
     def __init__(self, video):
@@ -21,13 +21,14 @@ class APIObject(Video):
             self.title = video.title
             self.type = APIObjectType.Movie
             self.provider = movie_provider
-        
+
         self.guid = self._extractGUID(video.guid)
         self.search_term = self._createSearchTerm()
-       # self.qualityProfileId
-       # self.titleSlug
+        self.qualityProfileId = None
+        self.titleSlug = None
         self.images = []
         self.seasons = []
+        self.wanted = 1
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
@@ -37,10 +38,10 @@ class APIObject(Video):
 
     def _createSearchTerm(self):
         if self.isMovie():
-          return str(f"imdb:{self.guid}")
+            return str(f"imdb:{self.guid}")
         elif self.isShow():
-          return str(f"tvdb:{self.guid}")
-    
+            return str(f"tvdb:{self.guid}")
+
     def __key(self):
         return (self.guid)
 
@@ -52,20 +53,21 @@ class APIObject(Video):
 
     def __str__(self):
         return str(f"GUID is: {self.guid} \n Title is: {self.title}")
-    
+
     def fetchMissingData(self):
         lookup_json = self.provider.lookupMedia(self)
-        #The media lookup returns an array of results, but we only need the first since we are explicitly 
-        #querying the id
-        first_item = next((x for x in lookup_json), None)
-        self._setMissingData(first_item)
+        self._setMissingData(lookup_json)
 
     def _setMissingData(self, data):
-       print(f"data is: {data}")
-       self.titleSlug = data["titleSlug"]
-       self.images = data["images"]
-       self.seasons = data["seasons"]
-       print(self)
+        #The media lookup returns a list of results, but we only need the first since we are explicitly
+        #querying the id
+      
+        [item] = data
+        
+        self.titleSlug = item["titleSlug"]
+        self.images = item["images"]
+        self.seasons = item["seasons"]
+        self.qualityProfile = item["qualityProfileId"]
 
     def _extractGUID(self,guid):
         if not guid:
