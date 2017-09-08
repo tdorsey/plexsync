@@ -40,8 +40,11 @@ class ThirdParty():
         param = {'term' : media.search_term}
         response = requests.get(url = self._buildURL(self.endpoints["lookup"]), params = param, headers = self.headers)
         print(f"Searching for: {media.title} - with {media.search_term}")
-        return response.json()
-
+        if response.status_code == requests.codes.ok:
+            return response.json()
+        else:
+            print("Request failed: {0}\n{1}".format(response.status_code,
+                                              response.content)) 
     def createEntry(self, media):
         payload = { 'tvdbId' : media.guid,
                      'title' : media.title,

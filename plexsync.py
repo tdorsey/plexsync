@@ -61,8 +61,7 @@ def createSearchTermFromMedia(media):
 
 def sendMediaToThirdParty(media: list):
     for m in media:
-        if m.isShow():
-            m.fetchMissingData()
+        m.fetchMissingData()
 
 settings = getSettings()
 
@@ -87,14 +86,15 @@ their_server = account.resource(their_server_name).connect()
 
 sections = settings.get('sections', 'sections').split(",")
 for section in sections:
-    your_media = getMedia(your_server, section)
+    #your_media = getMedia(your_server, section)
     their_media = getMedia(their_server, section)
 
-    their_new_media = their_media - your_media
-    your_new_media = your_media - their_media
+    their_new_media = their_media# - your_media
+    #your_new_media = your_media - their_media
 
-    printMedia(their_new_media, section)
+    #printMedia(their_new_media, section)
 
     wantedMedia = their_new_media
-
+    wantedMedia = my_list = [x for x in their_new_media if x.guid == 119174]    
+    print(wantedMedia)
     sendMediaToThirdParty(wantedMedia)

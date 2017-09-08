@@ -38,7 +38,7 @@ class APIObject(Video):
 
     def _createSearchTerm(self):
         if self.isMovie():
-            return str(f"imdb:{self.guid}")
+            return str(f"imdb:tt{self.guid}")
         elif self.isShow():
             return str(f"tvdb:{self.guid}")
 
@@ -64,10 +64,17 @@ class APIObject(Video):
       
         [item] = data
         
-        self.titleSlug = item["titleSlug"]
-        self.images = item["images"]
-        self.seasons = item["seasons"]
-        self.qualityProfile = item["qualityProfileId"]
+        if self.isMovie():
+            self.titleSlug = item["titleSlug"]
+            self.images = item["images"]
+            self.qualityProfile = item["qualityProfileId"]    
+        elif self.isShow():
+            self.titleSlug = item["titleSlug"]
+            self.images = item["images"]
+            self.seasons = item["seasons"]
+            self.qualityProfile = item["qualityProfileId"]
+        else:
+            print(f"Don't know how to set data for {self.title} - {self.type}") 
 
     def _extractGUID(self,guid):
         if not guid:
