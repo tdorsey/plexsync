@@ -42,7 +42,6 @@ def getMedia(server, section):
     else:
         return "Invalid Section"
 
-
 def printMedia(media, section):
     count = len(media)
     printHeaderLine()
