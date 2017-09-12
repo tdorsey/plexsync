@@ -10,6 +10,12 @@ import urllib
 
 from apiobject import APIObject
 from base import *
+from thirdparty import ThirdParty
+from thirdparty import ThirdPartyService
+
+show_provider = ThirdParty(ThirdPartyService.Show)
+movie_provider = ThirdParty(ThirdPartyService.Movie)
+
 
 def printHeaderLine():
     print('*******************')
@@ -42,7 +48,6 @@ def getMedia(server, section):
     else:
         return "Invalid Section"
 
-
 def printMedia(media, section):
     count = len(media)
     printHeaderLine()
@@ -74,6 +79,18 @@ if username and password:
 else:
     print("Set a username and passsword in the config file")
     exit(1)
+
+
+
+tv_quality_profile =  input("TV Quality Profile:") or settings.get('sonarr', 'quality_profile')
+movie_quality_profile =  input("Movie Quality Profile:") or settings.get('radarr', 'quality_profile')
+
+if username and password:
+    account = MyPlexAccount(username, password)
+else:
+    print("Set a username and passsword in the config file")
+    exit(1)
+
 
 getServers(account)
 
