@@ -5,6 +5,8 @@ import sys
 
 from pathlib import Path
 
+CONFIG_PATH = str(os.path.join(Path.home(), '.config', 'plexsync', 'config.ini'))
+
 class APIObjectType(enum.Enum):
     Show = 1
     Movie = 2
@@ -16,11 +18,13 @@ def dump(obj):
 
 def getSettings():
     settings = configparser.ConfigParser()
-    CONFIG_PATH = str(os.path.join(Path.home(), '.config', 'plexsync', 'config.ini'))
     print(f"Reading configuration from {CONFIG_PATH} ")
     settings.read(CONFIG_PATH)
     return settings
 
+def writeSettings(settings):
+    with open(CONFIG_PATH, 'w') as config_file:
+        settings.write(config_file)
 
 
 
