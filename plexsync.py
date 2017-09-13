@@ -10,6 +10,12 @@ import urllib
 
 from apiobject import APIObject
 from base import *
+from thirdparty import ThirdParty
+from thirdparty import ThirdPartyService
+
+show_provider = ThirdParty(ThirdPartyService.Show)
+movie_provider = ThirdParty(ThirdPartyService.Movie)
+
 
 def printHeaderLine():
     print('*******************')
@@ -60,8 +66,8 @@ def createSearchTermFromMedia(media):
 
 def sendMediaToThirdParty(media: list):
     for m in media:
-        if m.isShow():
-            m.fetchMissingData()
+        m.fetchMissingData()
+        m.provider.createEntry(m)
 
 settings = getSettings()
 
@@ -73,6 +79,18 @@ if username and password:
 else:
     print("Set a username and passsword in the config file")
     exit(1)
+
+
+
+tv_quality_profile =  input("TV Quality Profile:") or settings.get('sonarr', 'quality_profile')
+movie_quality_profile =  input("Movie Quality Profile:") or settings.get('radarr', 'quality_profile')
+
+if username and password:
+    account = MyPlexAccount(username, password)
+else:
+    print("Set a username and passsword in the config file")
+    exit(1)
+
 
 getServers(account)
 
@@ -95,5 +113,5 @@ for section in sections:
     printMedia(their_new_media, section)
 
     wantedMedia = their_new_media
-
+    #wantedMedia = my_list = [x for x in their_new_media if x.guid == 119174]    
     sendMediaToThirdParty(wantedMedia)

@@ -1,5 +1,6 @@
 import re
 import requests
+import time
 import urllib
 
 from plexapi.video import Video
@@ -38,7 +39,7 @@ class APIObject(Video):
 
     def _createSearchTerm(self):
         if self.isMovie():
-            return str(f"imdb:{self.guid}")
+            return str(f"imdb:tt{self.guid}")
         elif self.isShow():
             return str(f"tvdb:{self.guid}")
 
@@ -53,21 +54,35 @@ class APIObject(Video):
 
     def __str__(self):
         return str(f"GUID is: {self.guid} \n Title is: {self.title}")
+        
+    def addToLibrary(self):
+        add_json = self.provider.createEntry(self)
 
     def fetchMissingData(self):
         lookup_json = self.provider.lookupMedia(self)
-        self._setMissingData(lookup_json)
-
+        if lookup_json:
+            self._setMissingData(lookup_json)
+        
     def _setMissingData(self, data):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
       
         [item] = data
         
-        self.titleSlug = item["titleSlug"]
-        self.images = item["images"]
-        self.seasons = item["seasons"]
-        self.qualityProfile = item["qualityProfileId"]
+        
+
+        if self.isMovie():
+            self.titleSlug = item["titleSlug"]
+            self.images = item["images"]
+            self.qualityProfile = item["qualityProfileId"]
+            self.tmdbId = item["tmdbId"]    
+        elif self.isShow():
+            self.titleSlug = item["titleSlug"]
+            self.images = item["images"]
+            self.seasons = item["seasons"]
+            self.qualityProfile = item["qualityProfileId"]
+        else:
+            print(f"Don't know how to set data for {self.title} - {self.type}") 
 
     def _extractGUID(self,guid):
         if not guid:
