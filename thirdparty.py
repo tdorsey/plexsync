@@ -42,7 +42,7 @@ class ThirdParty():
         return str(f"{self.endpointBase}{endpoint}")
     
     def setQualityProfileSetting(self):
-            print("setting quality")
+            print(f"setting quality for {self.service.value}")
             KEY = 'quality_profile'
             section = self.service.value
             print("getting profiles")        
