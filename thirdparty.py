@@ -2,6 +2,8 @@ import configparser
 import enum
 import requests
 from base import *
+from addoptions import *
+
 settings = getSettings()
 
 class ThirdPartyService(enum.Enum):
@@ -12,6 +14,7 @@ class ThirdParty():
     def __init__(self, service):
         self.service = service
         self.qualityProfiles = None #Set quality profiles so the real getter can cache them
+        self.addOptions = AddOptions(self.service)
         try:
             self.host = settings.get(service.value, 'host')
             self.apiRoot = "api"
