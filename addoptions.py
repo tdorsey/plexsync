@@ -1,6 +1,7 @@
 import configparser
 import enum
 from base import *
+from setting import *
 from distutils.util import strtobool
 settings = getSettings()
 
@@ -8,46 +9,33 @@ settings = getSettings()
 #ignoreWithoutFiles: Unmonitors any episodes without a file
 #searchForMissing: Searches for missing files after applying ignoreWithFiles and ignoreWithoutFiles
 
-
 class AddOptions():
     def __init__(self, service):
             self.service = service
             try:
-                self.ignoreWithFiles = settings.get(service.value, 'ignoreWithFiles')
+                self.ignoreWithFiles = settings.getboolean(service.value, 'ignore_with_files')
             except configparser.NoOptionError:
-                self.ignoreWithFiles = self.setIgnoreWithFilesSetting()
+                theSetting = Setting("ignore_with_files", str(f"Should {service.value} ignore items with files?"))
+                self.ignoreWithFiles = self.setSetting(theSetting) 
             try:
-                self.ignoreWithoutFiles = settings.get(service.value, 'ignoreWithoutFiles')
+                self.ignoreWithoutFiles = settings.getboolean(service.value, 'ignore_without_files')
             except configparser.NoOptionError:
-                self.ignoreWithFiles = self.setIgnoreWithoutFilesSetting()
+                theSetting = Setting("ignore_without_files", str(f"Should {service.value} ignore items without files?"))
+                self.ignoreWithFiles = self.setSetting(theSetting) 
             try:
-                self.ignoreWithFiles = settings.get(service.value, 'searchForMissing')
+                self.ignoreWithFiles = settings.getboolean(service.value, 'search_for_missing')
             except configparser.NoOptionError:
-                self.ignoreWithFiles = self.setSearchForMissingSetting()
+                theSetting = Setting("search_for_missing", str(f"Should {service.value} automatically search when added?"))
+                self.searchMissing = self.setSetting(theSetting) 
 
-    def setIgnoreWithFilesSetting(self):
-            print("setting ignore with files")
-            KEY = 'ignore_with_files'
-            section = self.service.value
-            ignore_with_files_string = str(strtobool(input("Ignore with files?:")))
-            settings.set(section, KEY, ignore_with_files_string)
-            writeSettings(settings)
-            return ignore_with_files_string
+    def setSetting(self, setting):
+            _section = self.service.value
+            print(f"setting {setting.key} for {_section}")
 
-    def setIgnoreWithoutFilesSetting(self):
-            print("setting ignore without files")
-            KEY = 'ignore_without_files'
-            section = self.service.value
-            ignore_without_files_string = str(strtobool(input("Ignore without files?:")))
-            settings.set(section, KEY, ignore_without_files_string)
-            writeSettings(settings)
-            return ignore_without_files_string
+            user_input = input(setting.prompt)
+            setting.value = str(user_input)
 
-    def setSearchForMissingSetting(self):
-            print("setting search for missing")
-            KEY = 'search_for_missing'
-            section = self.service.value
-            search_for_missing_string = str(strtobool(input("Search for missing files?:")))
-            settings.set(section, KEY, search_for_missing_string)
+            settings.set(_section, setting.key, setting.value)
             writeSettings(settings)
-            return search_for_missing_string
+            return setting.value
+

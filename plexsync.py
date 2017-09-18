@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pick import pick
 from plexapi.myplex import MyPlexAccount
 
 import getpass
@@ -69,6 +70,16 @@ def sendMediaToThirdParty(media: list):
         m.fetchMissingData()
         m.provider.createEntry(m)
 
+def chooseMedia(media: list):
+    _title = 'Please select the media you want to sync (press SPACE to select, ENTER to continue):'
+    _options = [m.title for m in media]
+    selected = pick(_options, _title, multi_select=True, min_selection_count=1)
+    print(type(selected))
+    #wanted_media = [media[i] for i in selected.index]
+    print(selected)
+    print(wanted_media)
+#    return selected
+
 settings = getSettings()
 
 username =  input("MyPlex username:") or settings.get('auth', 'myplex_username')
@@ -110,8 +121,7 @@ for section in sections:
     their_new_media = their_media - your_media
     your_new_media = your_media - their_media
 
-    printMedia(their_new_media, section)
+    #printMedia(their_new_media, section)
 
-    wantedMedia = their_new_media
-    #wantedMedia = my_list = [x for x in their_new_media if x.guid == 119174]    
+    wantedMedia = chooseMedia(their_new_media)
     sendMediaToThirdParty(wantedMedia)
