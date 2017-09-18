@@ -4,27 +4,26 @@ from base import *
 from distutils.util import strtobool
 settings = getSettings()
 
-#ignoreEpisodesWithFiles: Unmonitors any episodes with a file
-#ignoreEpisodesWithoutFiles: Unmonitors any episodes without a file
-#searchForMissingEpisodes: Searches for missing files after applying ignoreEpisodesWithFiles and 
-ignoreEpisodesWithoutFiles
+#ignoreWithFiles: Unmonitors any episodes with a file
+#ignoreWithoutFiles: Unmonitors any episodes without a file
+#searchForMissing: Searches for missing files after applying ignoreWithFiles and ignoreWithoutFiles
 
 
 class AddOptions():
     def __init__(self, service):
             self.service = service
             try:
-                self.ignoreEpisodesWithFiles = settings.get(service.value, 'ignoreWithFiles')
+                self.ignoreWithFiles = settings.get(service.value, 'ignoreWithFiles')
             except configparser.NoOptionError:
-                self.ignoreEpisodesWithFiles = self.setIgnoreWithFilesSetting()
+                self.ignoreWithFiles = self.setIgnoreWithFilesSetting()
             try:
-                self.ignoreEpisodesWithoutFiles = settings.get(service.value, 'ignoreWithoutFiles')
+                self.ignoreWithoutFiles = settings.get(service.value, 'ignoreWithoutFiles')
             except configparser.NoOptionError:
-                self.ignoreEpisodesWithFiles = self.setIgnoreWithoutFilesSetting()
+                self.ignoreWithFiles = self.setIgnoreWithoutFilesSetting()
             try:
-                self.ignoreEpisodesWithFiles = settings.get(service.value, 'searchForMissing')
+                self.ignoreWithFiles = settings.get(service.value, 'searchForMissing')
             except configparser.NoOptionError:
-                self.ignoreEpisodesWithFiles = self.setSearchForMissingSetting()
+                self.ignoreWithFiles = self.setSearchForMissingSetting()
 
     def setIgnoreWithFilesSetting(self):
             print("setting ignore with files")
