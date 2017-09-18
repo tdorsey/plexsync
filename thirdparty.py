@@ -121,8 +121,6 @@ class ThirdParty():
             self.qualityProfiles = response.json()
         return self.qualityProfiles
     def _getRootfolder(self):
-        print(self._buildURL(self.endpoints["rootfolder"]))
-        print(self.headers)
         response = requests.get(url = self._buildURL(self.endpoints["rootfolder"]), headers = self.headers)
         [item] = response.json()
         return item["path"]

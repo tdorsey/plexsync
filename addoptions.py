@@ -15,27 +15,22 @@ class AddOptions():
             try:
                 self.ignoreWithFiles = settings.getboolean(service.value, 'ignore_with_files')
             except configparser.NoOptionError:
-                theSetting = Setting("ignore_with_files", str(f"Should {service.value} ignore items with files?"))
-                self.ignoreWithFiles = self.setSetting(theSetting) 
+                promptString = str(f"Should {service.value} ignore items with files?")
+                theSetting = Setting("ignore_with_files", service.value, promptString)
+                self.ignoreWithFiles = theSetting.write() 
             try:
                 self.ignoreWithoutFiles = settings.getboolean(service.value, 'ignore_without_files')
             except configparser.NoOptionError:
-                theSetting = Setting("ignore_without_files", str(f"Should {service.value} ignore items without files?"))
-                self.ignoreWithFiles = self.setSetting(theSetting) 
+                promptString = str(f"Should {service.value} ignore items without files?")
+                theSetting = Setting("ignore_without_files", service.value, promptString)
+                self.ignoreWithFiles = theSetting.write() 
+
             try:
-                self.ignoreWithFiles = settings.getboolean(service.value, 'search_for_missing')
+                self.searchMissing = settings.getboolean(service.value, 'search_for_missing')
             except configparser.NoOptionError:
-                theSetting = Setting("search_for_missing", str(f"Should {service.value} automatically search when added?"))
-                self.searchMissing = self.setSetting(theSetting) 
+                promptString = str(f"Should {service.value} automatically search when items are added?")
+                theSetting = Setting("search_for_missing", service.value, promptString)
+                self.ignoreWithFiles = theSetting.write() 
 
-    def setSetting(self, setting):
-            _section = self.service.value
-            print(f"setting {setting.key} for {_section}")
 
-            user_input = input(setting.prompt)
-            setting.value = str(user_input)
-
-            settings.set(_section, setting.key, setting.value)
-            writeSettings(settings)
-            return setting.value
 

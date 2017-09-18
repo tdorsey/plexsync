@@ -70,15 +70,21 @@ def sendMediaToThirdParty(media: list):
         m.fetchMissingData()
         m.provider.createEntry(m)
 
-def chooseMedia(media: list):
+def chooseMedia(media: set):
     _title = 'Please select the media you want to sync (press SPACE to select, ENTER to continue):'
-    _options = [m.title for m in media]
-    selected = pick(_options, _title, multi_select=True, min_selection_count=1)
-    print(type(selected))
-    #wanted_media = [media[i] for i in selected.index]
-    print(selected)
-    print(wanted_media)
-#    return selected
+    #convert our media set to a list so we can match the selected indexes to the media
+    media_list = sorted(media,  key=lambda m: m.title)
+    _options = [m.title for m in media_list]
+    selected_items = pick(_options, _title, multi_select=True, min_selection_count=1)
+    print(selected_items)
+    wanted_media = []
+
+    for s in selected_items:
+        selected_index = s[1]
+        print(f"adding {s[0]} to wanted")
+        wanted_media.append(media_list[selected_index])
+    print(f"{wanted_media} | {selected_items}")
+    return wanted_media
 
 settings = getSettings()
 
