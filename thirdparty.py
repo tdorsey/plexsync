@@ -28,7 +28,6 @@ class ThirdParty():
                 self.qualityProfile = settings.get(service.value, 'quality_profile')
             except configparser.NoOptionError:
                 self.qualityProfile = self.setQualityProfileSetting()
-
             if self.service == ThirdPartyService.Show:
                 self.endpoints["lookup"] = "series/lookup"
                 self.endpoints["add"] = "series"
@@ -122,6 +121,8 @@ class ThirdParty():
             self.qualityProfiles = response.json()
         return self.qualityProfiles
     def _getRootfolder(self):
+        print(self._buildURL(self.endpoints["rootfolder"]))
+        print(self.headers)
         response = requests.get(url = self._buildURL(self.endpoints["rootfolder"]), headers = self.headers)
         [item] = response.json()
         return item["path"]
