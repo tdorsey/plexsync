@@ -1,3 +1,7 @@
+from base import *
+
+settings = getSettings()
+
 class Setting():
     def __init__(self, key, section, prompt):
         self.key = key
@@ -8,11 +12,11 @@ class Setting():
     def write(self):
             print(f"setting {self.key} in {self.section}")
 
-            user_input = input(self.prompt)
-            self.value = str(user_input)
-
-            settings.set(_section, setting.key, setting.value)
+            if not self.value:
+                user_input = input(self.prompt)
+                self.value = str(user_input)
+            settings.set(self.section, self.key, self.value)
             writeSettings(settings)
-            return setting.value
+            return self.value
 
 

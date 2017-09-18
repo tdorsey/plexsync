@@ -1,8 +1,10 @@
 import configparser
 import enum
 import requests
-from base import *
 from addoptions import *
+from base import *
+from pick import pick
+from setting import *
 
 settings = getSettings()
 
@@ -44,24 +46,18 @@ class ThirdParty():
         return str(f"{self.endpointBase}{endpoint}")
     
     def setQualityProfileSetting(self):
-            print(f"setting quality for {self.service.value}")
-            KEY = 'quality_profile'
-            section = self.service.value
+            promptString = str(f"Choose a default quality profile for {self.service.value}")
+            setting = Setting("quality_profile", self.service.value, promptString)
             print("getting profiles")        
             profile_list = self._getQualityProfiles()
-            for profile in profile_list:
-                print(f"{profile['name']} - {profile['id']}")
-            user_profile_id = input("Select a quality profile id:")
-            user_profile = None
-            for p in profile_list:
-                if int(p['id']) == int(user_profile_id):
-                    user_profile = p
-                    break
-            if(user_profile):
-                user_profile_string = str(user_profile['id'])
-                settings.set(section, KEY, user_profile_string)
-                writeSettings(settings)
-                return user_profile_string
+            option, index = pick([p['name'] for p in profile_list], promptString, min_selection_count=1)
+            profile = profile_list[index]
+            setting.value = str(profile['id'])
+            print(f"Setting is {setting.key} {setting.value}")
+            print(f"profile id  is {profile['id']}")
+            user_profile_id = setting.write()
+            print(f"user id is {user_profile_id}")
+            return user_profile_id
 
     def lookupMedia(self, media):
         param = {'term' : media.search_term}
@@ -75,7 +71,7 @@ class ThirdParty():
         
              
     def createEntry(self, media):
-
+        print(self.qualityProfile)
         if media.type == APIObjectType.Show:
             payload = { 'tvdbId' : media.guid,
                         'title' : media.title,
