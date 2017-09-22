@@ -1,16 +1,14 @@
 import configparser
 import enum
+import json
 import requests
 from addoptions import *
 from base import *
 from pick import pick
 from setting import *
+from thirdpartyservice import *
 
 settings = getSettings()
-
-class ThirdPartyService(enum.Enum):
-    Show = "sonarr"
-    Movie = "radarr"
 
 class ThirdParty():
     def __init__(self, service):
@@ -69,43 +67,58 @@ class ThirdParty():
             print(f"Request failed: {response.status_code}\n{response.content}")
             return None
         
+    def _buildPayload(self, media):
+        if self.service == ThirdPartyService.Show:
+            return  { 
+                            'tvdbId' : media.guid,
+                            'title' : media.title,
+                            'qualityProfileId' : self.qualityProfile,
+                            'titleSlug' : media.titleSlug,
+                            'seasons': media.seasons,
+                            'images': media.images,
+                            'year': media.year,
+                            'rootFolderPath' : self.rootFolder,
+                            'addOptions' :  { 
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMissingEpisodes' : self.addOptions.searchForMissing
+                                            }
+                                           
+                    }
+        elif self.service == ThirdPartyService.Movie:
+             return  { 
+                            'tmdbId' : media.tmdbId,
+                            'title' : media.title,
+                            'qualityProfileId' : self.qualityProfile,
+                            'titleSlug' : media.titleSlug,
+                            'images': media.images,
+                            'year': media.year,
+                            'rootFolderPath' : self.rootFolder,
+                            'addOptions' :  { 
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMovie' : self.addOptions.searchForMovie
+                                            }
+                                           
+                    }
+
              
     def createEntry(self, media):
-        print(self.qualityProfile)
-        if media.type == APIObjectType.Show:
-            payload = { 'tvdbId' : media.guid,
-                        'title' : media.title,
-                        'qualityProfileId' : self.qualityProfile,
-                        'titleSlug' : media.titleSlug,
-                        'seasons': media.seasons,
-                        'images': media.images,
-                        'rootFolderPath' : self.rootFolder   
-                      }
-        elif media.type == APIObjectType.Movie:
-            payload = { 'tmdbId' : media.tmdbId,
-                        'title' : media.title,
-                        'qualityProfileId' : self.qualityProfile,
-                        'titleSlug' : media.titleSlug,
-                        'images': media.images,
-                        'rootFolderPath' : self.rootFolder   
-                      }
-        
-        else:
-            print(f"Invalid media type {media} {media.type}")
-            return None
-    
+        payload = self._buildPayload(media)
+        print(f"{media.title}")
+        print(f"Payload is: {payload}")
         try:
-            response = requests.post(url = self._buildURL(self.endpoints["add"]), json = payload, headers = self.headers)
+            response = requests.post(url = self._buildURL(self.endpoints["add"]), data = json.dumps(payload), headers = self.headers)
             if response.status_code != requests.codes.ok:
                 if response.json():
+                    print(f"Response code {response.status_code} response {response.content}")
                     print(response.json())
                     return response.json()
                 response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             print(e)
             return None
-        print(f"URL: {response.url}")
-        print(f"content: {response.content}")
+
 
         print(f"{response.status_code} \n {response.content}")
         print(f"Adding {media.type} {media.title} ")
