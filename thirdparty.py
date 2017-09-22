@@ -1,17 +1,20 @@
 import configparser
 import enum
+import json
 import requests
+from addoptions import *
 from base import *
-settings = getSettings()
+from pick import pick
+from setting import *
+from thirdpartyservice import *
 
-class ThirdPartyService(enum.Enum):
-    Show = "sonarr"
-    Movie = "radarr"
+settings = getSettings()
 
 class ThirdParty():
     def __init__(self, service):
         self.service = service
         self.qualityProfiles = None #Set quality profiles so the real getter can cache them
+        self.addOptions = AddOptions(self.service)
         try:
             self.host = settings.get(service.value, 'host')
             self.apiRoot = "api"
@@ -25,7 +28,6 @@ class ThirdParty():
                 self.qualityProfile = settings.get(service.value, 'quality_profile')
             except configparser.NoOptionError:
                 self.qualityProfile = self.setQualityProfileSetting()
-
             if self.service == ThirdPartyService.Show:
                 self.endpoints["lookup"] = "series/lookup"
                 self.endpoints["add"] = "series"
@@ -42,24 +44,18 @@ class ThirdParty():
         return str(f"{self.endpointBase}{endpoint}")
     
     def setQualityProfileSetting(self):
-            print("setting quality")
-            KEY = 'quality_profile'
-            section = self.service.value
+            promptString = str(f"Choose a default quality profile for {self.service.value}")
+            setting = Setting("quality_profile", self.service.value, promptString)
             print("getting profiles")        
             profile_list = self._getQualityProfiles()
-            for profile in profile_list:
-                print(f"{profile['name']} - {profile['id']}")
-            user_profile_id = input("Select a quality profile id:")
-            user_profile = None
-            for p in profile_list:
-                if int(p['id']) == int(user_profile_id):
-                    user_profile = p
-                    break
-            if(user_profile):
-                user_profile_string = str(user_profile['id'])
-                settings.set(section, KEY, user_profile_string)
-                writeSettings(settings)
-                return user_profile_string
+            option, index = pick([p['name'] for p in profile_list], promptString, min_selection_count=1)
+            profile = profile_list[index]
+            setting.value = str(profile['id'])
+            print(f"Setting is {setting.key} {setting.value}")
+            print(f"profile id  is {profile['id']}")
+            user_profile_id = setting.write()
+            print(f"user id is {user_profile_id}")
+            return user_profile_id
 
     def lookupMedia(self, media):
         param = {'term' : media.search_term}
@@ -71,43 +67,58 @@ class ThirdParty():
             print(f"Request failed: {response.status_code}\n{response.content}")
             return None
         
+    def _buildPayload(self, media):
+        if self.service == ThirdPartyService.Show:
+            return  { 
+                            'tvdbId' : media.guid,
+                            'title' : media.title,
+                            'qualityProfileId' : self.qualityProfile,
+                            'titleSlug' : media.titleSlug,
+                            'seasons': media.seasons,
+                            'images': media.images,
+                            'year': media.year,
+                            'rootFolderPath' : self.rootFolder,
+                            'addOptions' :  { 
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMissingEpisodes' : self.addOptions.searchForMissing
+                                            }
+                                           
+                    }
+        elif self.service == ThirdPartyService.Movie:
+             return  { 
+                            'tmdbId' : media.tmdbId,
+                            'title' : media.title,
+                            'qualityProfileId' : self.qualityProfile,
+                            'titleSlug' : media.titleSlug,
+                            'images': media.images,
+                            'year': media.year,
+                            'rootFolderPath' : self.rootFolder,
+                            'addOptions' :  { 
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMovie' : self.addOptions.searchForMovie
+                                            }
+                                           
+                    }
+
              
     def createEntry(self, media):
-
-        if media.type == APIObjectType.Show:
-            payload = { 'tvdbId' : media.guid,
-                        'title' : media.title,
-                        'qualityProfileId' : self.qualityProfile,
-                        'titleSlug' : media.titleSlug,
-                        'seasons': media.seasons,
-                        'images': media.images,
-                        'rootFolderPath' : self.rootFolder   
-                      }
-        elif media.type == APIObjectType.Movie:
-            payload = { 'tmdbId' : media.tmdbId,
-                        'title' : media.title,
-                        'qualityProfileId' : self.qualityProfile,
-                        'titleSlug' : media.titleSlug,
-                        'images': media.images,
-                        'rootFolderPath' : self.rootFolder   
-                      }
-        
-        else:
-            print(f"Invalid media type {media} {media.type}")
-            return None
-    
+        payload = self._buildPayload(media)
+        print(f"{media.title}")
+        print(f"Payload is: {payload}")
         try:
-            response = requests.post(url = self._buildURL(self.endpoints["add"]), json = payload, headers = self.headers)
+            response = requests.post(url = self._buildURL(self.endpoints["add"]), data = json.dumps(payload), headers = self.headers)
             if response.status_code != requests.codes.ok:
                 if response.json():
+                    print(f"Response code {response.status_code} response {response.content}")
                     print(response.json())
                     return response.json()
                 response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             print(e)
             return None
-        print(f"URL: {response.url}")
-        print(f"content: {response.content}")
+
 
         print(f"{response.status_code} \n {response.content}")
         print(f"Adding {media.type} {media.title} ")
