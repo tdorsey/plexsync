@@ -87,7 +87,7 @@ class ThirdParty():
                     }
         elif self.service == ThirdPartyService.Movie:
              return  { 
-                            'tmdbId' : media.guid,
+                            'tmdbId' : media.tmdbId,
                             'title' : media.title,
                             'qualityProfileId' : self.qualityProfile,
                             'titleSlug' : media.titleSlug,

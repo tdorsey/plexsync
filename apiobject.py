@@ -29,7 +29,6 @@ class APIObject(Video):
         self.titleSlug = None
         self.images = []
         self.seasons = []
-        self.wanted = 1
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
@@ -66,7 +65,7 @@ class APIObject(Video):
     def _setMissingData(self, data):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
-      
+        print(f"{data} media data")
         [item] = data        
 
         if self.isMovie():
