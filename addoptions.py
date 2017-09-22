@@ -3,11 +3,15 @@ import enum
 from base import *
 from setting import *
 from distutils.util import strtobool
+from thirdparty import *
+from thirdpartyservice import *
+
 settings = getSettings()
 
 #ignoreWithFiles: Unmonitors any episodes with a file
 #ignoreWithoutFiles: Unmonitors any episodes without a file
 #searchForMissing: Searches for missing files after applying ignoreWithFiles and ignoreWithoutFiles
+#searchForMovie: Radarr specific
 
 class AddOptions():
     def __init__(self, service):
@@ -26,7 +30,10 @@ class AddOptions():
                 self.ignoreWithFiles = theSetting.write() 
 
             try:
-                self.searchMissing = settings.getboolean(service.value, 'search_for_missing')
+                if self.service == ThirdPartyService.Show:
+                    self.searchForMissingEpisodes = settings.getboolean(service.value, 'search_for_missing')
+                elif self.service == ThirdPartyService.Movie:
+                    self.searchForMovie = settings.getboolean(service.value, 'search_for_missing')
             except configparser.NoOptionError:
                 promptString = str(f"Should {service.value} automatically search when items are added?")
                 theSetting = Setting("search_for_missing", service.value, promptString)

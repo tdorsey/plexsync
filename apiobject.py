@@ -67,14 +67,13 @@ class APIObject(Video):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
       
-        [item] = data
-        
-        
+        [item] = data        
 
         if self.isMovie():
             self.titleSlug = item["titleSlug"]
             self.images = item["images"]
             self.qualityProfile = item["qualityProfileId"]
+            self.year = item["year"]    
             self.tmdbId = item["tmdbId"]    
         elif self.isShow():
             self.titleSlug = item["titleSlug"]
@@ -89,4 +88,7 @@ class APIObject(Video):
             return
         match = re.search(r'\d+', guid)
         if match:
-            return int(match.group())
+        #Force padding imdb ids or else anything with leading zeroes fails
+            padded = str(match.group().zfill(7))
+            return padded
+
