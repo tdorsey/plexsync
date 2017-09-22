@@ -10,3 +10,4 @@ tqdm==4.15.0
 urllib3==1.22
 websocket-client==0.44.0
 git+git://github.com/pkkid/python-plexapi.git
+git+git://github.com/wong2/pick.git

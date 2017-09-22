@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pick import Picker
 from plexapi.myplex import MyPlexAccount
 
 import getpass
@@ -69,6 +70,29 @@ def sendMediaToThirdParty(media: list):
         m.fetchMissingData()
         m.provider.createEntry(m)
 
+def _selectAll(picker):
+    print("selecting all")
+    return None
+
+def chooseMedia(media: set):
+    _title = 'Please select the media you want to sync (press SPACE to select, ENTER to continue):'
+    #convert our media set to a list so we can match the selected indexes to the media
+    media_list = sorted(media,  key=lambda m: m.title)
+    _options = [m.title for m in media_list]
+    picker = Picker(_options, _title, multi_select=True)
+    selected_items = picker.start()
+    wanted_media = []
+
+    for s in selected_items:
+        selected_index = s[1]
+        print(f"adding {s[0]} to wanted")
+        wanted_media.append(media_list[selected_index])
+    
+    if not selected_items:
+        wanted_media = media_list
+    
+    return wanted_media
+
 settings = getSettings()
 
 username =  input("MyPlex username:") or settings.get('auth', 'myplex_username')
@@ -79,8 +103,6 @@ if username and password:
 else:
     print("Set a username and passsword in the config file")
     exit(1)
-
-
 
 tv_quality_profile =  input("TV Quality Profile:") or settings.get('sonarr', 'quality_profile')
 movie_quality_profile =  input("Movie Quality Profile:") or settings.get('radarr', 'quality_profile')
@@ -110,8 +132,7 @@ for section in sections:
     their_new_media = their_media - your_media
     your_new_media = your_media - their_media
 
-    printMedia(their_new_media, section)
+    #printMedia(their_new_media, section)
 
-    wantedMedia = their_new_media
-    #wantedMedia = my_list = [x for x in their_new_media if x.guid == 119174]    
+    wantedMedia = chooseMedia(their_new_media)
     sendMediaToThirdParty(wantedMedia)

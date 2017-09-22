@@ -29,7 +29,6 @@ class APIObject(Video):
         self.titleSlug = None
         self.images = []
         self.seasons = []
-        self.wanted = 1
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
@@ -66,15 +65,14 @@ class APIObject(Video):
     def _setMissingData(self, data):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
-      
-        [item] = data
-        
-        
+        print(f"{data} media data")
+        [item] = data        
 
         if self.isMovie():
             self.titleSlug = item["titleSlug"]
             self.images = item["images"]
             self.qualityProfile = item["qualityProfileId"]
+            self.year = item["year"]    
             self.tmdbId = item["tmdbId"]    
         elif self.isShow():
             self.titleSlug = item["titleSlug"]
@@ -89,4 +87,7 @@ class APIObject(Video):
             return
         match = re.search(r'\d+', guid)
         if match:
-            return int(match.group())
+        #Force padding imdb ids or else anything with leading zeroes fails
+            padded = str(match.group().zfill(7))
+            return padded
+
