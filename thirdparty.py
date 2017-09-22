@@ -1,7 +1,6 @@
 import configparser
 import enum
 import json
-import jsonpickle
 import requests
 from addoptions import *
 from base import *
@@ -80,9 +79,9 @@ class ThirdParty():
                             'year': media.year,
                             'rootFolderPath' : self.rootFolder,
                             'addOptions' :  { 
-                                                'ignoreEpisodesWithFiles' : str(self.addOptions.ignoreWithFiles).lower(),
-                                                'ignoreEpisodesWithoutFiles' : str(self.addOptions.ignoreWithoutFiles).lower(),
-                                                'searchForMissingEpisodes' : str(self.addOptions.searchForMissing).lower()
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMissingEpisodes' : self.addOptions.searchForMissing
                                             }
                                            
                     }
@@ -96,9 +95,9 @@ class ThirdParty():
                             'year': media.year,
                             'rootFolderPath' : self.rootFolder,
                             'addOptions' :  { 
-                                                'ignoreEpisodesWithFiles' : str(self.addOptions.ignoreWithFiles).lower(),
-                                                'ignoreEpisodesWithoutFiles' : str(self.addOptions.ignoreWithoutFiles).lower(),
-                                                'searchForMovie' : str(self.addOptions.searchForMovie).lower()
+                                                'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
+                                                'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
+                                                'searchForMovie' : self.addOptions.searchForMovie
                                             }
                                            
                     }
@@ -109,7 +108,7 @@ class ThirdParty():
         print(f"{media.title}")
         print(f"Payload is: {payload}")
         try:
-            response = requests.post(url = self._buildURL(self.endpoints["add"]), json = payload, headers = self.headers)
+            response = requests.post(url = self._buildURL(self.endpoints["add"]), data = json.dumps(payload), headers = self.headers)
             if response.status_code != requests.codes.ok:
                 if response.json():
                     print(f"Response code {response.status_code} response {response.content}")
