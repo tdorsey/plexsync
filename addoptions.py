@@ -34,7 +34,6 @@ class AddOptions():
                     self.searchForMissingEpisodes = settings.getboolean(service.value, 'search_for_missing')
                 elif self.service == ThirdPartyService.Movie:
                     self.searchForMovie = settings.getboolean(service.value, 'search_for_missing')
-                    print(f"self.searchFormovie is {type(self.searchForMovie)}")
             except configparser.NoOptionError:
                 promptString = str(f"Should {service.value} automatically search when items are added?")
                 theSetting = Setting("search_for_missing", service.value, promptString)

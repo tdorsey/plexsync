@@ -16,7 +16,7 @@ from thirdparty import ThirdPartyService
 
 show_provider = ThirdParty(ThirdPartyService.Show)
 movie_provider = ThirdParty(ThirdPartyService.Movie)
-
+allOrNone = False
 
 def printHeaderLine():
     print('*******************')
@@ -70,27 +70,38 @@ def sendMediaToThirdParty(media: list):
         m.fetchMissingData()
         m.provider.createEntry(m)
 
+def _skip(picker):
+    print("Skipping")
+    allOrNone = False
+    return None, -1
+
 def _selectAll(picker):
-    print("selecting all")
-    return None
+    print("Selecting All")
+    allOrNone = True
+    return None, -1
+
 
 def chooseMedia(media: set):
-    _title = 'Please select the media you want to sync (press SPACE to select, ENTER to continue):'
+    _title = 'Please select the media you want to sync (press SPACE to select, ENTER to continue, s to skip selection, a to select all):'
     #convert our media set to a list so we can match the selected indexes to the media
     media_list = sorted(media,  key=lambda m: m.title)
     _options = [m.title for m in media_list]
     picker = Picker(_options, _title, multi_select=True)
+    picker.register_custom_handler(ord('s'),  _skip)
+    picker.register_custom_handler(ord('a'),  _selectAll)
     selected_items = picker.start()
     wanted_media = []
-
-    for s in selected_items:
-        selected_index = s[1]
-        print(f"adding {s[0]} to wanted")
-        wanted_media.append(media_list[selected_index])
-    
-    if not selected_items:
-        wanted_media = media_list
-    
+    if selected_items[0] == None:
+        if allOrNone:
+            wanted_media = media_list
+        else:
+            wanted_media = []
+    else:
+        for s in selected_items:
+            selected_index = s[1]
+            print(f"adding {s[0]} to wanted")
+            wanted_media.append(media_list[selected_index])
+            
     return wanted_media
 
 settings = getSettings()

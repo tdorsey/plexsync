@@ -81,7 +81,7 @@ class ThirdParty():
                             'addOptions' :  { 
                                                 'ignoreEpisodesWithFiles' : self.addOptions.ignoreWithFiles,
                                                 'ignoreEpisodesWithoutFiles' : self.addOptions.ignoreWithoutFiles,
-                                                'searchForMissingEpisodes' : self.addOptions.searchForMissing
+                                                'searchForMissingEpisodes' : self.addOptions.searchForMissingEpisodes
                                             }
                                            
                     }
