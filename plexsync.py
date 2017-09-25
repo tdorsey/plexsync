@@ -39,6 +39,9 @@ class PlexSync:
             self.account = MyPlexAccount(username, password)
         return self.account
 
+    def getSections(self, server):
+        return server.library.sections()
+
     def getMedia(self, server, section):
         results = server.library.section(section).search()
         api_objects = []
