@@ -25,9 +25,11 @@ class PlexSync:
     def printHeaderLine():
         print('*******************')
 
-    def getServers(self):
-        resources = self.account.resources()
-        self.servers = filter(lambda x: x.provides == 'server', self.account.resources())
+    def getServers(self, account):
+        if not account:
+            account = self.account
+        resources = account.resources()
+        self.servers = filter(lambda x: x.provides == 'server', account.resources())
         return self.servers
         for s in servers:
             print(s.name)

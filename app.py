@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from flask import Flask, render_template, request, redirect, url_for, abort, session
-from plexsync import *
+from plexsync import PlexSync
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
 
@@ -12,7 +12,9 @@ def index():
 def servers():
     session['username'] = request.form['username']
     session['password'] = request.form['password']
-
+    
+    plexsync = PlexSync()
+    
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)    
 
