@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
-<select>
+<select class="server">
 {% for server in server_list %}
-    <option value="{{ server.clientIdentifier }}">{{ server.name }}</option>
+    <option value="{{ server.name }}">{{ server.name }}</option>
 {% endfor %}
 </select>
 {% endblock %}

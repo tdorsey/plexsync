@@ -1,11 +1,15 @@
 #!/usr/bin/python3
-from flask import Flask, render_template, request, redirect, url_for, abort, session
+from flask import Flask, render_template, request, redirect, url_for, abort, session, jsonify
 from plexsync import PlexSync
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
 
+
 @app.route('/')
 def index():
+    if not request.script_root:
+        # this assumes that the 'index' view function handles the path '/'
+        request.script_root = url_for('index', _external=True)
     return render_template('index.html')
 
 @app.route('/servers', methods=['POST'])
@@ -20,6 +24,13 @@ def servers():
 
     return render_template('servers.html',server_list=servers)
     #return redirect(url_for('message'))
+
+@app.route('/servers/<string:server>', methods=['POST'])
+def server(server):
+    session['server'] = request.form['server']
+    return jsonify("whee")
+        
+        
 
 @app.route('/message')
 def message():
