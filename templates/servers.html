@@ -1,8 +1,16 @@
-{% extends "layout.html" %}
+{% include "layout.html" %}
 {% block content %}
 <select class="server">
 {% for server in server_list %}
     <option value="{{ server.name }}">{{ server.name }}</option>
 {% endfor %}
 </select>
+
+<select class="section">
+{% for section in section_list %}
+    <option value="{{ section.title }}">{{ section.title }}</option>
+{% endfor %}
+</select>
+
 {% endblock %}
+

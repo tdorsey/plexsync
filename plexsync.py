@@ -29,10 +29,11 @@ class PlexSync:
         if not account:
             account = self.account
         resources = account.resources()
-        self.servers = filter(lambda x: x.provides == 'server', account.resources())
+        self.servers = filter(lambda x: x.provides == 'server', resources)
         return self.servers
-        for s in servers:
-            print(s.name)
+
+    def getServer(self, serverName):
+        return self.account.resource(serverName).connect()
 
     def getAccount(self,username, password):
         if not self.account:
@@ -41,6 +42,9 @@ class PlexSync:
 
     def getSections(self, server):
         return server.library.sections()
+
+    def getSection(self, server, section):
+        return filter(lambda x: x.name == section, server.library.sections())
 
     def getMedia(self, server, section):
         results = server.library.section(section).search()
