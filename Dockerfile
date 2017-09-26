@@ -13,6 +13,8 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
+RUN ln -s /usr/local/bin/python3 /usr/bin/python3
+
 RUN apk add --no-cache git
 
 COPY requirements.txt /usr/src/app/
