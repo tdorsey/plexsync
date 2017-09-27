@@ -19,8 +19,8 @@ def servers():
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)
-    
-    return json.dumps(sorted([server.name for server in servers]))
+    sortedServers = sorted([server.name for server in servers])
+    return json.dumps(sortedServers)
     
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
@@ -31,7 +31,9 @@ def sections(serverName):
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
-    return json.dumps(sorted([section.title for section in sections]))
+
+    sortedSections = sorted([section.title for section in sections])
+    return json.dumps(sortedSections)
 
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 
@@ -42,7 +44,9 @@ def media(serverName, section):
     
     server = plexsync.getServer(serverName)
     media = plexsync.getMedia(server, section)
-    return json.dumps(sorted([m.title for m in media]))
+
+    sortedMedia = sorted([m.title for m in media])
+    return json.dumps(sortedMedia)
     
 
 if __name__ == '__main__':
