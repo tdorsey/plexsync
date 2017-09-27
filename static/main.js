@@ -1,6 +1,16 @@
-    function onSelectSection(e) {} 
+    function onSelectSection(e) {
+        var server = $('.server').val();
+        var endpoint = $SCRIPTROOT + '/servers/' + server + '/' + section
+        $.post(endpoint, { server : server, section : section }, function(response) {
+            sectionMedia = $('.media')
+            sectionMedia.empty()
+            $.each(response, function(index, item) {
+                sectionMedia.append('<li>' + item '</li>');
+            });
+        }, 'json');
+
+} 
     function onSelectServer(e) {
-        console.log(e)
         
         var server = $(this).val();
         var endpoint = $SCRIPTROOT + '/servers/' + server
