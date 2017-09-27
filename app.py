@@ -16,40 +16,35 @@ def index():
 
 @app.route('/servers', methods=['POST'])
 def servers():
-    session['username'] = request.form['username']
-    session['password'] = request.form['password']
-    
-    plexsync = PlexSync()
-    
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
-
-    servers = plexsync.getServers(plexAccount)    
-
-    return render_template('servers.html',server_list=servers)
-    #return redirect(url_for('message'))
-
-@app.route('/servers/<string:serverName>', methods=['POST'])
-def server(serverName):
-    print(f"routing for {serverName}")
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)
+    
+    return json.dumps(sorted([server.name for server in servers]))
+    
 
+@app.route('/servers/<string:serverName>', methods=['GET','POST'])
+
+def sections(serverName):
+    print(f"routing for {serverName}")
+    plexsync = PlexSync()
+    plexAccount = plexsync.getAccount(session['username'], session['password'])
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
-    return(json.dumps([s.title for s in sections]))
-    
- #   return render_template('servers.html',server_list=servers, section_list=sections)
-        
-        
+    return json.dumps(sorted([section.title for section in sections]))
 
-@app.route('/message')
-def message():
-    if not 'username' in session:
-        return abort(403)
-    return render_template('templates/message.html', username=session['username'], 
-                                           message=session['message'])
+@app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
+
+def media(serverName, section):
+    print(f"routing for {serverName} - {section}")
+    plexsync = PlexSync()
+    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    
+    server = plexsync.getServer(serverName)
+    media = plexsync.getMedia(server, section)
+    return json.dumps(sorted([m.title for m in media]))
+    
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
