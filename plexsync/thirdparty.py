@@ -2,11 +2,15 @@ import configparser
 import enum
 import json
 import requests
-from addoptions import *
-from base import *
+
+
+from plexsync.addoptions import *
+from plexsync.base import *
+from plexsync.setting import *
+from plexsync.thirdpartyservice import *
+
+
 from pick import pick
-from setting import *
-from thirdpartyservice import *
 
 settings = getSettings()
 

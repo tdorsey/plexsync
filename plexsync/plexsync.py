@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 
-from plexapi.myplex import MyPlexAccount
 
 import re
 import enum
 import requests
 import urllib
 
-from apiobject import APIObject
-from base import *
-from thirdparty import ThirdParty
-from thirdparty import ThirdPartyService
+from plexapi.myplex import MyPlexAccount
+
+from plexsync.base import *
+from plexsync.apiobject import APIObject
+from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 class PlexSync:
     
