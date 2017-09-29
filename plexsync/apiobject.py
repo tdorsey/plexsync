@@ -4,9 +4,9 @@ import time
 import urllib
 
 from plexapi.video import Video
-from base import *
-from thirdparty import ThirdParty
-from thirdparty import ThirdPartyService
+
+from plexsync.base import *
+from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 show_provider = ThirdParty(ThirdPartyService.Show)
 movie_provider = ThirdParty(ThirdPartyService.Movie)
