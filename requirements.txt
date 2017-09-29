@@ -17,4 +17,4 @@ websocket-client==0.44.0
 Werkzeug==0.12.2
 git+git://github.com/pkkid/python-plexapi.git
 git+git://github.com/wong2/pick.git
-plexsync==0.1
+file:///app/plexsync#egg=PlexSync

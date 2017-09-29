@@ -3,19 +3,23 @@ FROM lsiobase/alpine.python3
 WORKDIR /app
 
 COPY requirements.txt /app
-RUN pip install --no-cache-dir -r requirements.txt
 
 #Copy files
-COPY app.py /app
-COPY config.ini /config
+COPY app.py .
+COPY config.ini /config/
 
 #Copy folders
-COPY plexsync /app/
-COPY scripts /app/
-COPY static /app/
-COPY templates /app/
+COPY /plexsync/ ./plexsync
+COPY /plexsync/ .
+
+COPY /static/  /static/
+COPY /templates/ /static/
+
+RUN pip install -r requirements.txt 
 
 # Expose the Flask port
 EXPOSE 5000
 
-CMD [ "python3", "/app/app.py" ]
+
+ENTRYPOINT [ "python3" ]
+CMD ["app.py"]
