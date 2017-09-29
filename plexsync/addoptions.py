@@ -1,10 +1,12 @@
 import configparser
 import enum
-from base import *
-from setting import *
+
 from distutils.util import strtobool
-from thirdparty import *
-from thirdpartyservice import *
+
+from plexsync.base import *
+from plexsync.setting import *
+from plexsync.thirdparty import *
+from plexsync.thirdpartyservice import *
 
 settings = getSettings()
 
