@@ -2,18 +2,16 @@ FROM lsiobase/alpine.python3
 
 WORKDIR /app
 
-COPY requirements.txt /app
+COPY requirements.txt .
 
-#Copy files
 COPY app.py .
 COPY config.ini /config/
 
-#Copy folders
 COPY /plexsync/ ./plexsync
 COPY /plexsync/ .
 
-COPY /static/  /static/
-COPY /templates/ /static/
+COPY /static  ./static
+COPY /templates ./templates
 
 RUN pip install -r requirements.txt 
 
