@@ -47,25 +47,15 @@ class PlexSync:
         return filter(lambda x: x.name == section, server.library.sections())
 
     def getMedia(self, server, section):
-        results = server.library.section(section).search()
-        api_objects = []
-        if section == "Movies":
-            for r in results:
-                a = APIObject(r)
-                api_objects.append(a)
-            return set(api_objects)
-        elif section == "TV Shows":
-            # Show objects don't have a GUID, so grab the first episode and read it from there
-            # This is really inefficient, since to query a single episode, the python-plexapi creates a
-            # query for all episodes, and then filters down to one
-            for r in results:
-                episode = next(iter(r.episodes() or []), None)
-                a = APIObject(episode)
-                api_objects.append(a)
-            return set(api_objects)
 
-        else:
-            return "Invalid Section"
+        results = server.library.section(section).all()
+        # guid does not exist in the xml response to it will reload once for each show.
+
+        api_objects = []
+        for r in results:
+            a = APIObject(r)
+            api_objects.append(a)
+        return set(api_objects)
 
         def printMedia(media, section):
             count = len(media)
