@@ -48,7 +48,7 @@ tv_quality_profile =  input("TV Quality Profile:") or settings.get('sonarr', 'qu
 movie_quality_profile =  input("Movie Quality Profile:") or settings.get('radarr', 'quality_profile')
 
 
-plexsync.getServers()
+plexsync.getServers(account)
 
 your_server_name =  input("Your server: ") or settings.get('servers', 'yours')
 their_server_name = input("Their server: ") or settings.get('servers', 'theirs')
