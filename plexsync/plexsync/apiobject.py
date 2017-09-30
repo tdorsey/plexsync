@@ -5,8 +5,8 @@ import urllib
 
 from plexapi.video import Video
 
-from plexsync.base import *
-from plexsync.thirdparty import ThirdParty, ThirdPartyService
+from base import *
+from thirdparty import ThirdParty, ThirdPartyService
 
 show_provider = ThirdParty(ThirdPartyService.Show)
 movie_provider = ThirdParty(ThirdPartyService.Movie)

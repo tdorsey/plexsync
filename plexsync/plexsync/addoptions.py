@@ -3,10 +3,10 @@ import enum
 
 from distutils.util import strtobool
 
-from plexsync.base import *
-from plexsync.setting import *
-from plexsync.thirdparty import *
-from plexsync.thirdpartyservice import *
+from base import *
+from setting import *
+from thirdparty import *
+from thirdpartyservice import *
 
 settings = getSettings()
 
