@@ -1,4 +1,4 @@
-from plexsync.base import *
+from base import *
 
 settings = getSettings()
 
