@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from flask import Flask, render_template, request, redirect, url_for, abort, session, jsonify, g
-from plexsync import *
+from plexsync.plexsync import PlexSync
 import json
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
