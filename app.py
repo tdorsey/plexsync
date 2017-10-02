@@ -46,10 +46,10 @@ def media(serverName, section):
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     
     server = plexsync.getServer(serverName)
-    media = plexsync.getMedia(server, section)
+    results = plexsync.getResults(server, section)
 
-    sortedMedia = sorted([m.title for m in media])
-    return json.dumps(sortedMedia)
+    sortedResults = sorted([r.title for r in results])
+    return json.dumps(sortedResults)
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
