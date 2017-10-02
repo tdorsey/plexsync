@@ -46,10 +46,13 @@ class PlexSync:
     def getSection(self, server, section):
         return filter(lambda x: x.name == section, server.library.sections())
 
+    def getResults(self, server, section):
+        # guid does not exist in the xml response to it will reload once for each show.
+        return server.library.section(section).all()    
+
     def getMedia(self, server, section):
 
-        results = server.library.section(section).all()
-        # guid does not exist in the xml response to it will reload once for each show.
+        results = getResults(server, section)
 
         api_objects = []
         for r in results:
