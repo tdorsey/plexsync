@@ -17,5 +17,7 @@ RUN pip install -r requirements.txt
 # Expose the Flask port
 EXPOSE 5000
 
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+
 ENTRYPOINT [ "python3" ]
 CMD ["app.py"]
