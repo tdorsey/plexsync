@@ -87,17 +87,8 @@ class PlexSync:
             m.provider.createEntry(m)
 
     def compareLibrariesAsResults(self, yourResults, theirResults):
-        yourSet = set()
-        theirSet = set()
+        return [x for x in theirResults if x not in yourResults]
      
-        for r in yourResults:
-            yourSet.add(r)
-
-        for r in theirResults:
-            theirSet.add(r)
-
-        return theirSet - yourSet
-
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()
         theirSet = set()
