@@ -86,6 +86,18 @@ class PlexSync:
             m.fetchMissingData()
             m.provider.createEntry(m)
 
+    def compareLibrariesAsResults(self, yourResults, theirResults):
+        yourSet = set()
+        theirSet = set()
+     
+        for r in yourResults:
+            yourSet.add(r)
+
+        for r in theirResults:
+            theirSet.add(r)
+
+        return theirSet - yourSet
+
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()
         theirSet = set()

@@ -54,10 +54,16 @@ def media(serverName, section):
 @app.route('/servers/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/servers/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
+    
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
-    settings = plexsync.getSettings()
-    sectionsToCompare = settings.get('sections', 'sections').split(",")
+    sectionsToCompare = []
+
+    if not sectionName:    
+        settings = plexsync.getSettings()
+        sectionsToCompare = settings.get('sections', 'sections').split(",")
+    else:
+        sectionsToCompare.append(sectionName)
 
     yourServer = plexsync.getServer(yourServerName)
     theirServer = plexsync.getServer(theirServerName)
@@ -71,7 +77,32 @@ def compare(yourServerName, theirServerName, sectionName=None):
         print(f"{len(results)} your diff")
 
         return json.dumps([r.title for r in results])
+@app.route('/servers/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
+def compareResults(yourServerName, theirServerName, sectionName=None):
+    
+    plexsync = PlexSync()
+    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    sectionsToCompare = []
+
+    if not sectionName:    
+        settings = plexsync.getSettings()
+        sectionsToCompare = settings.get('sections', 'sections').split(",")
+    else:
+        sectionsToCompare.append(sectionName)
+
+    yourServer = plexsync.getServer(yourServerName)
+    theirServer = plexsync.getServer(theirServerName)
+    
+    for section in sectionsToCompare:
+        yourLibrary = plexsync.getResults(yourServer, section)
+        theirLibrary = plexsync.getResults(theirServer, section)
+        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
+
+        print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
+        print(f"{len(results)} your diff")
+
+        return json.dumps([r.title for r in results])
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5000)
