@@ -9,11 +9,9 @@ import enum
 import requests
 import urllib
 
-from apiobject import APIObject
-from base import *
-from thirdparty import ThirdParty
-from thirdparty import ThirdPartyService
-from plexsync import PlexSync
+from plexsync.plexsync import PlexSync
+from plexsync.base import getSettings
+
 
 def _selectAll(picker):
     print("selecting all")
