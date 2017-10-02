@@ -21,9 +21,14 @@ class PlexSync:
 
         self.account = None
         self.servers = None
+    
+        self.settings = getSettings()
 
     def printHeaderLine():
         print('*******************')
+    
+    def getSettings(self):
+        return self.settings
 
     def getServers(self, account):
         if not account:
@@ -81,5 +86,15 @@ class PlexSync:
             m.fetchMissingData()
             m.provider.createEntry(m)
 
+    def compareLibraries(self, yourResults, theirResults):
+        yourSet = set()
+        theirSet = set()
+     
+        for r in yourResults:
+            yourSet.add(APIObject(r))
 
-    
+        for r in theirResults:
+            theirSet.add(APIObject(r))
+
+        return theirSet - yourSet
+
