@@ -8,9 +8,9 @@ import urllib
 
 from plexapi.myplex import MyPlexAccount
 
-from base import *
-from apiobject import APIObject
-from thirdparty import ThirdParty, ThirdPartyService
+from plexsync.base import *
+from plexsync.apiobject import APIObject
+from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 class PlexSync:
     
