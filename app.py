@@ -53,8 +53,8 @@ def media(serverName, section):
     sortedResults = sorted([r.title for r in results])
     return json.dumps(sortedResults)
 
-@app.route('/servers/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
-@app.route('/servers/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
+@app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
+@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
     
     plexsync = PlexSync()
@@ -80,7 +80,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
 
         return json.dumps([r.title for r in results])
 
-@app.route('/servers/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
+@app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
     
     plexsync = PlexSync()
