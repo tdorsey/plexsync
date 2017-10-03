@@ -57,7 +57,7 @@ class PlexSync:
 
     def getMedia(self, server, section):
 
-        results = getResults(server, section)
+        results = self.getResults(server, section)
 
         api_objects = []
         for r in results:
@@ -87,7 +87,16 @@ class PlexSync:
             m.provider.createEntry(m)
 
     def compareLibrariesAsResults(self, yourResults, theirResults):
-        return [x for x in theirResults if x not in yourResults]
+        yourSet = set()
+        theirSet = set()
+     
+        for r in yourResults:
+            yourSet.add(r)
+
+        for r in theirResults:
+            theirSet.add(r)
+
+        return theirSet - yourSet
      
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()

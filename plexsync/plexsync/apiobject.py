@@ -5,6 +5,15 @@ import urllib
 
 from plexapi.video import Video
 
+def _hash(self):
+    return hash(self.guid)
+def _eq(self, other):
+    return self.guid == other.guid
+    
+
+Video.__hash__ = _hash
+Video.__eq__ = _eq
+
 from plexsync.base import *
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
