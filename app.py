@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 from flask import Flask, render_template, request, redirect, url_for, abort, session, jsonify, g
 from plexsync.plexsync import PlexSync
+
 import json
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
 
@@ -77,6 +79,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
         print(f"{len(results)} your diff")
 
         return json.dumps([r.title for r in results])
+
 @app.route('/servers/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
     
@@ -96,6 +99,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
     for section in sectionsToCompare:
         yourLibrary = plexsync.getResults(yourServer, section)
         theirLibrary = plexsync.getResults(theirServer, section)
+
         results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")

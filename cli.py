@@ -2,7 +2,6 @@
 
 from pick import Picker
 from plexapi.myplex import MyPlexAccount
-
 import getpass
 import re
 import enum
@@ -58,13 +57,13 @@ their_server = account.resource(their_server_name).connect()
 
 sections = settings.get('sections', 'sections').split(",")
 for section in sections:
-    your_media = plexsync.getMedia(your_server, section)
-    their_media = plexsync.getMedia(their_server, section)
 
-    their_new_media = their_media - your_media
-    your_new_media = your_media - their_media
+    theirLibrary = plexsync.getResults(their_server, section)
+    yourLibrary = plexsync.getResults(your_server, section)
 
-    #printMedia(their_new_media, section)
+    their_new_media = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
+
+    printMedia(their_new_media, section)
 
     wantedMedia = chooseMedia(their_new_media)
     plexsync.sendMediaToThirdParty(wantedMedia)
