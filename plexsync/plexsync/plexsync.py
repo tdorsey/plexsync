@@ -96,8 +96,10 @@ class PlexSync:
         for r in theirResults:
             theirSet.add(r)
 
-        return theirSet - yourSet
-     
+        results = theirSet - yourSet
+        resultsList = list(results)
+        resultsList.sort(key=lambda x: x.title)
+        return resultsList
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()
         theirSet = set()
