@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="container">
+    <div class="well well-sm">
+        <strong>Display</strong>
+        <div class="btn-group">
+            <a href="#" id="list" class="btn btn-default btn-sm"><span class="glyphicon 
+glyphicon-th-list">
+            </span>List</a> <a href="#" id="grid" class="btn btn-default btn-sm"><span
+                class="glyphicon glyphicon-th"></span>Grid</a>
+    <select class="server" id="serverA">
+       {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
+    </select>
+    <select class="server" id="serverB">
+   {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
+    </select>
+
+    <select class="section" id="section">
+    </select>
+            <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-default btn-sm"><span 
+class="glyphicon 
+glyphicon-sort">
+            </span>Compare</a>
+        </div>
+    </div>
+
+    <div id="comparison_results" class="row list-group media collapse in" data-toggle="items">
+        <section class="section_title" id="comparison_title"></section>
+    </div>
+<div class="messages" /> 
+{% endblock %}
+

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from flask import Flask, render_template, request, redirect, url_for, abort, session, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
 
 import json
@@ -16,17 +16,29 @@ def index():
         request.script_root = url_for('index', _external=True)
     return render_template('index.html')
 
-@app.route('/servers', methods=['POST'])
-def servers():
+@app.route('/login', methods=['POST'])
+def login():
     session['username'] = request.form['username']
     session['password'] = request.form['password']
+
+    plexsync = PlexSync()
+    try:
+        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        return redirect('https://plexsync.rtd3.me/home', code=303)
+    
+    except Exception as e:
+        return json.dumps(str(e))
+
+@app.route('/home', methods=['GET'])
+def home():
 
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)
     sortedServers = sorted([server.name for server in servers])
-    return json.dumps(sortedServers)
-    
+   
+    return render_template('home.html', server_list=sortedServers)   
+
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
 
@@ -38,7 +50,7 @@ def sections(serverName):
     sections = plexsync.getSections(server)
 
     sortedSections = sorted([section.title for section in sections])
-    return json.dumps(sortedSections)
+    return json.dumps(sortedSections, ensure_ascii=False)
 
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 
@@ -51,7 +63,7 @@ def media(serverName, section):
     results = plexsync.getResults(server, section)
 
     sortedResults = sorted([r.title for r in results])
-    return json.dumps(sortedResults)
+    return json.dumps(sortedResults, ensure_ascii=False)
 
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
@@ -73,12 +85,19 @@ def compare(yourServerName, theirServerName, sectionName=None):
     for section in sectionsToCompare:
         yourLibrary = plexsync.getResults(yourServer, section)
         theirLibrary = plexsync.getResults(theirServer, section)
-        results = plexsync.compareLibraries(yourLibrary, theirLibrary)
+        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         print(f"{len(results)} your diff")
-
-        return json.dumps([r.title for r in results])
+        result_list = []
+        for r in results:
+                result_dict = {}
+                result_dict['title'] = r.title
+                result_dict['key'] = r.ratingKey
+                result_dict['sectionID'] = r.librarySectionID
+                result_dict['guid'] = r.guid
+                result_list.append(result_dict)
+        return json.dumps(result_list, ensure_ascii=False)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
@@ -105,7 +124,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         print(f"{len(results)} your diff")
 
-        return json.dumps([r.title for r in results])
+        return json.dumps([r.title for r in results], ensure_ascii=False)
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
