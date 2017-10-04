@@ -25,7 +25,7 @@ def servers():
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)
     sortedServers = sorted([server.name for server in servers])
-    return json.dumps(sortedServers)
+    return json.dumps(sortedServers, ensure_ascii=False)
     
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
@@ -38,7 +38,7 @@ def sections(serverName):
     sections = plexsync.getSections(server)
 
     sortedSections = sorted([section.title for section in sections])
-    return json.dumps(sortedSections)
+    return json.dumps(sortedSections, ensure_ascii=False)
 
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 
@@ -51,7 +51,7 @@ def media(serverName, section):
     results = plexsync.getResults(server, section)
 
     sortedResults = sorted([r.title for r in results])
-    return json.dumps(sortedResults)
+    return json.dumps(sortedResults, ensure_ascii=False)
 
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
@@ -78,7 +78,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         print(f"{len(results)} your diff")
 
-        return json.dumps([r.title for r in results])
+        return json.dumps([r.title for r in results], ensure_ascii=False)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
@@ -105,7 +105,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         print(f"{len(results)} your diff")
 
-        return json.dumps([r.title for r in results])
+        return json.dumps([r.title for r in results], ensure_ascii=False)
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
