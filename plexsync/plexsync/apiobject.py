@@ -6,7 +6,7 @@ import urllib
 from plexapi.video import Video
 
 def _hash(self):
-    return hash((self.ratingKey, self.title)) 
+    return hash(self.title) 
 
 def _eq(self, other):
     return (self.title == other.title)     
