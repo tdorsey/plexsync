@@ -16,10 +16,20 @@ def index():
         request.script_root = url_for('index', _external=True)
     return render_template('index.html')
 
-@app.route('/servers', methods=['POST'])
-def servers():
+@app.route('/login', methods=['POST'])
+def login():
     session['username'] = request.form['username']
     session['password'] = request.form['password']
+
+    plexsync = PlexSync()
+    try:
+        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        return "hi"
+    except e as Exception:
+        return json.dumps(e)
+
+@app.route('/servers', methods=['GET'])
+def servers():
 
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
