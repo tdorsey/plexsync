@@ -1,11 +1,12 @@
     function onSelectSection(e) {
         var server = $('.server').val();
+        var section = $('.section').val();
         var endpoint = $SCRIPTROOT + '/servers/' + server + '/' + section
         $.post(endpoint, { server : server, section : section }, function(response) {
             sectionMedia = $('.media')
             sectionMedia.empty()
             $.each(response, function(index, item) {
-                sectionMedia.append('<li>' + item '</li>');
+                sectionMedia.append('<li>' + item + '</li>');
             });
         }, 'json');
 
