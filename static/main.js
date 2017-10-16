@@ -15,6 +15,9 @@
     function onSelectServer(e) {
         var that = this;
         var server = $(this).val();
+        var dropdownB = $(this).closest(".server");
+        hideOptionInDropdown(this, dropdownB);
+
         var endpoint = $SCRIPTROOT + '/servers/' + server;
         $.post(endpoint, { server : server }, function(response) {
             sectionSelect = $(that).siblings(".section");
@@ -24,7 +27,20 @@
                 sectionSelect.append(new Option(item, item));
             });
         }, 'json');
-}
+    }
+
+    function hideOptionInDropdown(dropdownA, dropdownB) {
+        $("dropdownB > option").each(function() {
+            var valA = $(this).attr('value');
+            var valB = $(dropdownB).attr('value');
+            var option = $(this);
+            if (valA == valB) {
+                option.hide();
+                option.siblings().show();
+             }
+        });
+    }
+
     $( document ).ready(function() {
       $(".server").prepend(new Option("Select a Server", null, true, true));  
       $(".server").change(onSelectServer);
