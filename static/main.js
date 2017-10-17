@@ -35,7 +35,7 @@
         var serverB = $("#serverB").val();
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
-        var endpoint = $SCRIPTROOT + '/compareResults/' + serverA + '/' + serverB + '/' + section
+        var endpoint = $SCRIPTROOT + '/compare/' + serverA + '/' + serverB + '/' + section
         $.get(endpoint, { yourServerName : serverA, theirServerName : serverB, sectionName : section }, 
             function(response) {
                 var resultList = $("#resultList")
