@@ -15,7 +15,7 @@
     function onSelectServer(e) {
         var that = this;
         var server = $(this).val();
-        var dropdownB = $(this).closest(".server");
+        var dropdownB = $("#server2").find(".server");
         hideOptionInDropdown(this, dropdownB);
 
         var endpoint = $SCRIPTROOT + '/servers/' + server;
@@ -30,11 +30,10 @@
     }
 
     function hideOptionInDropdown(dropdownA, dropdownB) {
-        $("dropdownB > option").each(function() {
-            var valA = $(this).attr('value');
-            var valB = $(dropdownB).attr('value');
+        var valA = $(dropdownA).val();
+        dropdownB.children().each(function() {
             var option = $(this);
-            if (valA == valB) {
+            if (valA == option.val()) {
                 option.hide();
                 option.siblings().show();
              }
