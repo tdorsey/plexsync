@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="buttonbar">
+    <button type="button" onclick="compareLibraries()">Compare Libraries</button>
+    <button id="server1_collapse" class="collapse" data-toggle="collapse" data-target="#server1">Collapse</button>
+    <button id="server2_collapse" class="collapse" data-toggle="collapse" data-target="#server2">Collapse</button>
+    <button id="results_collapse" class="collapse" data-toggle="collapse" data-target="#comparison_results">Collapse</button>
+</div>
+<div id="server1" class="media_list collapse in">
+    <select class="server" id="serverA">
+        {% for server in server_list %}
+            <option value="{{ server }}">{{ server }}</option>
+        {% endfor %}
+    </select>
+
+    <select class="section" id="section">
+        {% for section in section_list %}
+            <option value="{{ section.title }}">{{ section.title }}</option>
+        {% endfor %}
+    </select>
+    <section id="server1_title" class="section_title"></section>
+    <ul id="server1_results" class="media" />
+</div>
+
+<div id="server2" class="media_list collapse in">
+    <select class="server" id="serverB">
+        {% for server in server_list %}
+            <option value="{{ server }}">{{ server }}</option>
+        {% endfor %}
+    </select>
+
+    <select class="section">
+        {% for section in section_list %}
+            <option value="{{ section.title }}">{{ section.title }}</option>
+        {% endfor %}
+    </select>
+    <section class="section_title" id="server2_title"></section>
+    <ul id="server2_results" class="media" />
+</div>
+<div id="comparison_results" class="container collapse in">
+    <section class="section_title" id="comparison_title"></section>
+    <ul id="resultList" class="media" /> 
+ </div>
+<div class="messages" /> 
+{% endblock %}
+

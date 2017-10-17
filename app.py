@@ -24,19 +24,21 @@ def login():
     plexsync = PlexSync()
     try:
         plexAccount = plexsync.getAccount(session['username'], session['password'])
-        return "hi"
-    except e as Exception:
-        return json.dumps(e)
+        return redirect('https://plexsync.rtd3.me/home', code=303)
+    
+    except Exception as e:
+        return json.dumps(str(e))
 
-@app.route('/servers', methods=['GET'])
-def servers():
+@app.route('/home', methods=['GET'])
+def home():
 
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     servers = plexsync.getServers(plexAccount)
     sortedServers = sorted([server.name for server in servers])
-    return json.dumps(sortedServers, ensure_ascii=False)
-    
+   
+    return render_template('home.html', server_list=sortedServers)   
+
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
 
