@@ -34,12 +34,13 @@
         var serverB = $("#serverB").val();
         var section = $("#section").val();
         var endpoint = $SCRIPTROOT + '/compareResults/' + serverA + '/' + serverB + '/' + section
-        $.post(endpoint, { server : server, section : section }, function(response) {
-            var resultList = $(that)(".results")
-            resultList.empty()
-            $.each(response, function(index, item) {
-                resultList.append('<li>' + item + '</li>');
-            });
+        $.get(endpoint, { yourServerName : serverA, theirServerName : serverB, sectionName : section }, 
+            function(response) {
+                var resultList = $("#resultList")
+                resultList.empty()
+                    $.each(response, function(index, item) {
+                        resultList.append('<li>' + item + '</li>');
+                    });
         }, 'json');
 
 } 

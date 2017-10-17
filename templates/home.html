@@ -1,16 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="buttonbar">
-    <button type="button" onclick="compareLibraries">Compare Libraries</button>
+    <button type="button" onclick="compareLibraries()">Compare Libraries</button>
 </div>
 <div id="server1" class="media_list">
-    <select class="server">
+    <select class="server" id="serverA">
         {% for server in server_list %}
             <option value="{{ server }}">{{ server }}</option>
         {% endfor %}
     </select>
 
-    <select class="section">
+    <select class="section" id="section">
         {% for section in section_list %}
             <option value="{{ section.title }}">{{ section.title }}</option>
         {% endfor %}
@@ -19,7 +19,7 @@
 </div>
 
 <div id="server2" class="media_list">
-    <select class="server">
+    <select class="server" id="serverB">
         {% for server in server_list %}
             <option value="{{ server }}">{{ server }}</option>
         {% endfor %}
@@ -32,6 +32,9 @@
     </select>
     <ul class="media" />
 </div>
+<div class="results">
+    <ul id="resultList" /> 
+ </div>
 <div class="messages" /> 
 {% endblock %}
 
