@@ -18,10 +18,11 @@ html, body {height:100%}
     background-color: rgb(204, 123, 25);
 }
 
-button {
+.collapse button {
     float: right;
     width: 10%;
     height: 100%
+    visible: false;
 }
 
 .container {

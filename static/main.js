@@ -17,6 +17,9 @@
         var that = this;
         var server = $(this).val();
         var dropdownB = $("#server2").find(".server");
+        $("#server1_collapse").show().text(`Collapse ${server}`);
+        $("#server2_collapse").show().text(`Collapse ${dropdownB.val()}`);
+        $("#results_collapse").show().text(`Collapse Results`);
         hideOptionInDropdown(this, dropdownB);
 
         var endpoint = $SCRIPTROOT + '/servers/' + server;
