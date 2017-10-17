@@ -29,6 +29,22 @@
         }, 'json');
     }
 
+    function compareLibraries() {
+        var serverA = $("#serverA").val();
+        var serverB = $("#serverB").val();
+        var section = $("#section").val();
+        var endpoint = $SCRIPTROOT + '/compareResults/' + serverA + '/' + serverB + '/' + section
+        $.post(endpoint, { server : server, section : section }, function(response) {
+            var resultList = $(that)(".results")
+            resultList.empty()
+            $.each(response, function(index, item) {
+                resultList.append('<li>' + item + '</li>');
+            });
+        }, 'json');
+
+} 
+
+
     function hideOptionInDropdown(dropdownA, dropdownB) {
         var valA = $(dropdownA).val();
         dropdownB.children().each(function() {
