@@ -1,33 +1,37 @@
-{% include "layout.html" %}
+{% extends "layout.html" %}
 {% block content %}
+<div class="buttonbar">
+    <button type="button" onclick="compareLibraries">Compare Libraries</button>
+</div>
 <div id="server1" class="media_list">
-<select class="server">
-{% for server in server_list %}
-    <option value="{{ server }}">{{ server }}</option>
-{% endfor %}
-</select>
+    <select class="server">
+        {% for server in server_list %}
+            <option value="{{ server }}">{{ server }}</option>
+        {% endfor %}
+    </select>
 
-<select class="section">
-{% for section in section_list %}
-    <option value="{{ section.title }}">{{ section.title }}</option>
-{% endfor %}
-</select>
-<ul class="media" />
+    <select class="section">
+        {% for section in section_list %}
+            <option value="{{ section.title }}">{{ section.title }}</option>
+        {% endfor %}
+    </select>
+    <ul class="media" />
 </div>
 
 <div id="server2" class="media_list">
-<select class="server">
-{% for server in server_list %}
-    <option value="{{ server }}">{{ server }}</option>
-{% endfor %}
-</select>
+    <select class="server">
+        {% for server in server_list %}
+            <option value="{{ server }}">{{ server }}</option>
+        {% endfor %}
+    </select>
 
-<select class="section">
-{% for section in section_list %}
-    <option value="{{ section.title }}">{{ section.title }}</option>
-{% endfor %}
-</select>
-<ul class="media" />
+    <select class="section">
+        {% for section in section_list %}
+            <option value="{{ section.title }}">{{ section.title }}</option>
+        {% endfor %}
+    </select>
+    <ul class="media" />
 </div>
+<div class="messages" /> 
 {% endblock %}
 
