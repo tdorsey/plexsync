@@ -16,6 +16,7 @@
             <option value="{{ section.title }}">{{ section.title }}</option>
         {% endfor %}
     </select>
+    <section id="server1_title" class="section_title"></section>
     <ul id="server1_results" class="media collapse in" />
 </div>
 
@@ -32,10 +33,12 @@
             <option value="{{ section.title }}">{{ section.title }}</option>
         {% endfor %}
     </select>
+    <section class="section_title" id="server2_title"></section>
     <ul id="server2_results" class="media collapse in" />
 </div>
-<div class="results">
+<div id="comparison_results" class="container">
      <button data-toggle="collapse" data-target="#resultList">Collapse</button>
+    <section class="section_title" id="comparison_title"></section>
     <ul id="resultList" class="media collapse in" /> 
  </div>
 <div class="messages" /> 

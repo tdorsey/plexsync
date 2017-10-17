@@ -9,6 +9,7 @@
             $.each(response, function(index, item) {
                 sectionMedia.append('<li>' + item + '</li>');
             });
+           $(that).parent().find(".section_title").text(server);
         }, 'json');
 
 } 
@@ -33,7 +34,7 @@
         var serverA = $("#serverA").val();
         var serverB = $("#serverB").val();
         var section = $("#section").val();
-        $("#results").show();
+        $("#comparison_title").text(`${serverB} has the following new ${section}` );
         var endpoint = $SCRIPTROOT + '/compareResults/' + serverA + '/' + serverB + '/' + section
         $.get(endpoint, { yourServerName : serverA, theirServerName : serverB, sectionName : section }, 
             function(response) {
@@ -62,6 +63,5 @@
       $(".server").prepend(new Option("Select a Server", null, true, true));  
       $(".server").change(onSelectServer);
       $(".section").change(onSelectSection);
-      $(".results").hide();
       });
 
