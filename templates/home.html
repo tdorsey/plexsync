@@ -4,6 +4,7 @@
     <button type="button" onclick="compareLibraries()">Compare Libraries</button>
 </div>
 <div id="server1" class="media_list">
+    <button data-toggle="collapse" data-target="#server1_results">Collapse</button>
     <select class="server" id="serverA">
         {% for server in server_list %}
             <option value="{{ server }}">{{ server }}</option>
@@ -15,10 +16,11 @@
             <option value="{{ section.title }}">{{ section.title }}</option>
         {% endfor %}
     </select>
-    <ul class="media" />
+    <ul id="server1_results" class="media collapse in" />
 </div>
 
 <div id="server2" class="media_list">
+    <button data-toggle="collapse" data-target="#server2_results">Collapse</button>
     <select class="server" id="serverB">
         {% for server in server_list %}
             <option value="{{ server }}">{{ server }}</option>
@@ -30,10 +32,11 @@
             <option value="{{ section.title }}">{{ section.title }}</option>
         {% endfor %}
     </select>
-    <ul class="media" />
+    <ul id="server2_results" class="media collapse in" />
 </div>
 <div class="results">
-    <ul id="resultList" /> 
+     <button data-toggle="collapse" data-target="#resultList">Collapse</button>
+    <ul id="resultList" class="media collapse in" /> 
  </div>
 <div class="messages" /> 
 {% endblock %}
