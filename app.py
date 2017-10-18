@@ -85,12 +85,19 @@ def compare(yourServerName, theirServerName, sectionName=None):
     for section in sectionsToCompare:
         yourLibrary = plexsync.getResults(yourServer, section)
         theirLibrary = plexsync.getResults(theirServer, section)
-        results = plexsync.compareLibraries(yourLibrary, theirLibrary)
+        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
         print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         print(f"{len(results)} your diff")
-
-        return json.dumps([r.title for r in results], ensure_ascii=False)
+        result_list = []
+        for r in results:
+                result_dict = {}
+                result_dict['title'] = r.title
+                result_dict['key'] = r.ratingKey
+                result_dict['sectionID'] = r.librarySectionID
+                result_dict['guid'] = r.guid
+                result_list.append(result_dict)
+        return json.dumps(result_list, ensure_ascii=False)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):

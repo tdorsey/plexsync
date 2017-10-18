@@ -44,7 +44,10 @@
                 var resultList = $("#resultList")
                 resultList.empty()
                     $.each(response, function(index, item) {
-                        resultList.append('<li>' + item + '</li>');
+                        var li = $(`<li></li>`);
+                        li.text(item.title);
+                        li.attr('data-guid', item.guid);
+                        resultList.append(li);
                     });
         }, 'json');
 
