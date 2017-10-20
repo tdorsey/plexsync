@@ -46,6 +46,7 @@
                     $.each(response, function(index, item) {
                         var li = $(`<li></li>`);
                         li.text(item.title);
+                        li.addClass("list-group-item");
                         li.attr('data-guid', item.guid);
                         resultList.append(li);
                     });
