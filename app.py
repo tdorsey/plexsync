@@ -97,7 +97,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['sectionID'] = r.librarySectionID
                 result_dict['guid'] = r.guid
                 result_list.append(result_dict)
-        return json.dumps(result_list, ensure_ascii=False)
+        return render_template('media.html', media=result_list)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
