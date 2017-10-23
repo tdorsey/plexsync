@@ -2,15 +2,15 @@
         var that = this;
         var section = $(this).val();
         var server = $("#serverA").val();
-        var endpoint = $SCRIPTROOT + '/servers/' + server + '/' + section
-        $.post(endpoint, { server : server, section : section }, function(response) {
-            sectionMedia = $(that).siblings(".media")
-            sectionMedia.empty()
-            $.each(response, function(index, item) {
-                sectionMedia.append('<li>' + item + '</li>');
-            });
-           $(that).parent().find(".section_title").text(server);
-        }, 'json');
+        var endpoint = $`{SCRIPTROOT}/servers/{server}/{section}`;
+//        $.post(endpoint, { server : server, section : section }, function(response) {
+ //           sectionMedia = $(that).siblings(".media")
+   //         sectionMedia.empty()
+     //       $.each(response, function(index, item) {
+       //         sectionMedia.append('<li>' + item + '</li>');
+         //   });
+          // $(that).parent().find(".section_title").text(server);
+//        }, 'json');
 
 } 
     function onSelectServer(e) {
@@ -39,18 +39,10 @@
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
         var endpoint = $SCRIPTROOT + '/compare/' + serverA + '/' + serverB + '/' + section
-        $.get(endpoint, { yourServerName : serverA, theirServerName : serverB, sectionName : section }, 
-            function(response) {
-                var resultList = $("#resultList")
-                resultList.empty();
-                    $.each(response, function(index, item) {
-                        var li = $(`<li></li>`);
-                        li.text(item.title);
-                        li.addClass("list-group-item");
-                        li.attr('data-guid', item.guid);
-                        resultList.append(li);
-                    });
-        }, 'json');
+         $.ajax({url: endpoint, success: function(result){
+                $("#comparison_results").append(result);
+
+          }}); 
 
 } 
 
