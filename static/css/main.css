@@ -35,3 +35,8 @@ html, body {height:100%}
     font-weight: bold;
     padding-left: 3%;
 }
+
+.glyphicon-sort {
+    display: inline-block;
+    transform: rotate(90deg);
+}
