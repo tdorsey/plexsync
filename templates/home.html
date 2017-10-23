@@ -1,91 +1,41 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="buttonbar">
-    <button type="button" onclick="compareLibraries()">Compare Libraries</button>
-    <button id="server1_collapse" class="collapse" data-toggle="collapse" data-target="#server1">Collapse</button>
-    <button id="server2_collapse" class="collapse" data-toggle="collapse" data-target="#server2">Collapse</button>
-    <button id="results_collapse" class="collapse" data-toggle="collapse" data-target="#comparison_results">Collapse</button>
-</div>
-<div id="server1" class="media_list collapse in">
+
+<div class="container">
+    <div class="well well-sm">
+        <strong>Display</strong>
+        <div class="btn-group">
+            <a href="#" id="list" class="btn btn-default btn-sm"><span class="glyphicon 
+glyphicon-th-list">
+            </span>List</a> <a href="#" id="grid" class="btn btn-default btn-sm"><span
+                class="glyphicon glyphicon-th"></span>Grid</a>
     <select class="server" id="serverA">
-        {% for server in server_list %}
-            <option value="{{ server }}">{{ server }}</option>
-        {% endfor %}
+       {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
+    </select>
+    <select class="server" id="serverB">
+   {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
     </select>
 
     <select class="section" id="section">
-        {% for section in section_list %}
-            <option value="{{ section.title }}">{{ section.title }}</option>
-        {% endfor %}
     </select>
-    <section id="server1_title" class="section_title"></section>
-    <nav aria-label="...">
-  <ul class="pagination">
-    <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1">Previous</a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item active">
-      <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">3</a></li>
-    <li class="page-item">
-      <a class="page-link" href="#">Next</a>
-    </li>
-  </ul>
-</nav>
-    <ul id="server1_results" class="media list-group" />
-</div>
+            <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-default btn-sm"><span 
+class="glyphicon 
+glyphicon-sort">
+            </span>Compare</a>
+        </div>
+    </div>
 
-<div id="server2" class="media_list collapse in">
-    <select class="server" id="serverB">
-        {% for server in server_list %}
-            <option value="{{ server }}">{{ server }}</option>
-        {% endfor %}
-    </select>
-
-    <select class="section">
-        {% for section in section_list %}
-            <option value="{{ section.title }}">{{ section.title }}</option>
-        {% endfor %}
-    </select>
-    <section class="section_title" id="server2_title"></section>
-    <nav aria-label="...">
-  <ul class="pagination">
-    <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1">Previous</a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item active">
-      <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">3</a></li>
-    <li class="page-item">
-      <a class="page-link" href="#">Next</a>
-    </li>
-  </ul>
-</nav>
-    <ul id="server2_results" class="media list-group" />
-</div>
-<div id="comparison_results" class="container collapse in">
+    <div id="comparison_results" class="row list-group media collapse in" data-toggle="items">
     <section class="section_title" id="comparison_title"></section>
-    <nav aria-label="...">
-  <ul class="pagination">
-    <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1">Previous</a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item active">
-      <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">3</a></li>
-    <li class="page-item">
-      <a class="page-link" href="#">Next</a>
-    </li>
-  </ul>
-</nav>
-    <ul id="resultList" class="media list-group" data-toggle="items" /> 
- </div>
+    {% for m in media %}
+        {% block media %}
+        {% endblock %}
+    {% endfor %}
+</div>
 <div class="messages" /> 
 {% endblock %}
 
