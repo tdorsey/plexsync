@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from flask import Flask, render_template, request, redirect, url_for, abort, session, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from plexsync.plexsync import PlexSync
 
 import json
@@ -15,6 +15,11 @@ def index():
         # this assumes that the 'index' view function handles the path '/'
         request.script_root = url_for('index', _external=True)
     return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static/images'),
+                               'favicon.png', mimetype='image/png')
 
 @app.route('/login', methods=['POST'])
 def login():
