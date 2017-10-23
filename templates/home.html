@@ -31,10 +31,7 @@ glyphicon-sort">
 
     <div id="comparison_results" class="row list-group media collapse in" data-toggle="items">
     <section class="section_title" id="comparison_title"></section>
-    {% for m in media %}
-        {% block media %}
-        {% endblock %}
-    {% endfor %}
+    <ul id="resultList" class="list-group"> </ul>
 </div>
 <div class="messages" /> 
 {% endblock %}

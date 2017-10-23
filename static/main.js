@@ -1,7 +1,7 @@
     function onSelectSection(e) {
         var that = this;
         var section = $(this).val();
-        var server = $(this).siblings(".server").val();
+        var server = $("#serverA").val();
         var endpoint = $SCRIPTROOT + '/servers/' + server + '/' + section
         $.post(endpoint, { server : server, section : section }, function(response) {
             sectionMedia = $(that).siblings(".media")
@@ -42,7 +42,7 @@
         $.get(endpoint, { yourServerName : serverA, theirServerName : serverB, sectionName : section }, 
             function(response) {
                 var resultList = $("#resultList")
-                resultList.empty()
+                resultList.empty();
                     $.each(response, function(index, item) {
                         var li = $(`<li></li>`);
                         li.text(item.title);
