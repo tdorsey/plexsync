@@ -22,11 +22,17 @@ glyphicon-th-list">
 
     <select class="section" id="section">
     </select>
-            <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-default btn-sm"><span 
-class="glyphicon 
-glyphicon-sort">
-            </span>Compare</a>
+            <strong>Actions</strong>
         </div>
+        <div class="btn-group">
+            <a href="#" onclick="toggleSelected()" id="toggleSelect" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-check" </span>Select All </a>
+            <a href="#" onclick="sync()" id="compare" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-refresh"> </span>Sync Selected </a>
+            <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-sort"> </span>Compare Libraries</a> 
+
+</div>
     </div>
 
     <div id="comparison_results" class="row list-group media collapse in" data-toggle="items">
