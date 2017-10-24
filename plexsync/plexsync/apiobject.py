@@ -67,13 +67,23 @@ class APIObject(Video):
         add_json = self.provider.createEntry(self)
 
     def fetchMissingData(self):
-        lookup_json = self.provider.lookupMedia(self)
-        if lookup_json:
-            self._setMissingData(lookup_json)
+        try:
+            lookup_json = self.provider.lookupMedia(self)
+            if lookup_json:
+                self._setMissingData(lookup_json)
+        except requests.exceptions.HTTPError:
+            print(f"An errror occurred fetching data for {self}")
+            self._setMissingData(None)
+            
         
     def _setMissingData(self, data):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
+
+        if data is None:
+            print(f"No data to set for {self}")
+            return
+    
         item = data[0]        
         print(f"{item} media data")
 

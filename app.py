@@ -100,7 +100,8 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['sectionID'] = r.librarySectionID
                 result_dict['year'] = r.year
                 result_dict['guid'] = r.guid
-                result_dict['image'] = m.images[0]['url'].replace("http", "https")
+                if len(m.images) > 0:
+                    result_dict['image'] = m.images[0]['url'].replace("http", "https")
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)
         return render_template('media.html', media=result_list)
