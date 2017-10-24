@@ -68,8 +68,7 @@ class ThirdParty():
         if response.status_code == requests.codes.ok:
             return response.json()
         else:
-            print(f"Request failed: {response.status_code}\n{response.content}")
-            return None
+            response.raise_for_status()
         
     def _buildPayload(self, media):
         if self.service == ThirdPartyService.Show:
