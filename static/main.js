@@ -46,6 +46,13 @@
 
 } 
 
+    function sync() {
+        alert("syncing");
+}
+    function toggleSelect() {
+        alert("toggling Select");
+}
+
 
     function hideOptionInDropdown(dropdownA, dropdownB) {
         var valA = $(dropdownA).val();
