@@ -2,6 +2,11 @@ FROM lsiobase/alpine.python3
 
 WORKDIR /app
 
+# Expose the Flask port
+EXPOSE 5000
+
+ENTRYPOINT [ "python3" ]
+CMD ["app.py"]
 
 COPY requirements.txt .
 COPY app.py .
@@ -18,10 +23,3 @@ COPY /static  ./static
 COPY /templates ./templates
 
 
-# Expose the Flask port
-EXPOSE 5000
-
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-
-ENTRYPOINT [ "python3" ]
-CMD ["app.py"]
