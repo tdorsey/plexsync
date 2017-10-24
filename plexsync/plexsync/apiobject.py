@@ -74,8 +74,8 @@ class APIObject(Video):
     def _setMissingData(self, data):
         #The media lookup returns a list of results, but we only need the first since we are explicitly
         #querying the id
-        print(f"{data} media data")
-        [item] = data        
+        item = data[0]        
+        print(f"{item} media data")
 
         if self.isMovie():
             self.titleSlug = item["titleSlug"]
@@ -83,6 +83,8 @@ class APIObject(Video):
             self.qualityProfile = item["qualityProfileId"]
             self.year = item["year"]    
             self.tmdbId = item["tmdbId"]    
+            self.overview = item["overview"]
+            self.rating = item["ratings"]
         elif self.isShow():
             self.titleSlug = item["titleSlug"]
             self.images = item["images"]

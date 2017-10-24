@@ -50,6 +50,12 @@ class PlexSync:
 
     def getSection(self, server, section):
         return filter(lambda x: x.name == section, server.library.sections())
+    
+    def getResult(self, sectionID, guid):
+         section = self.server.library.section(section)
+         result = section.search(guid=guid)
+         print(guid)
+         return result
 
     def getResults(self, server, section):
         # guid does not exist in the xml response to it will reload once for each show.
@@ -111,4 +117,10 @@ class PlexSync:
             theirSet.add(APIObject(r))
 
         return theirSet - yourSet
+    
+    def getAPIObject(self, r):
+        m = APIObject(r)
+        m.fetchMissingData()
+        return m
+        
 
