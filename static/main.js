@@ -60,7 +60,7 @@
 
     $( document ).ready(function() {
       $(".server").prepend(new Option("Select a Server", null, true, true));  
-      $(".server").change(onSelectServer);
+      $("#serverA").change(onSelectServer);
       $(".section").change(onSelectSection);
       });
 
