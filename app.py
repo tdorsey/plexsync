@@ -91,11 +91,17 @@ def compare(yourServerName, theirServerName, sectionName=None):
         print(f"{len(results)} your diff")
         result_list = []
         for r in results:
+                m = plexsync.getAPIObject(r)
                 result_dict = {}
                 result_dict['title'] = r.title
+                print(m.overview)
+                result_dict['overview'] = m.overview
                 result_dict['key'] = r.ratingKey
                 result_dict['sectionID'] = r.librarySectionID
+                result_dict['year'] = r.year
                 result_dict['guid'] = r.guid
+                result_dict['image'] = m.images[0]['url'].replace("http", "https")
+                result_dict['rating'] = m.rating
                 result_list.append(result_dict)
         return render_template('media.html', media=result_list)
 
