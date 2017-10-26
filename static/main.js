@@ -38,7 +38,7 @@
         var serverB = $("#serverB").val();
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
-        var endpoint = $SCRIPTROOT + '/compare/' + serverA + '/' + serverB + '/' + section
+        var endpoint = $`{SCRIPTROOT}/compare/{serverA}/{serverB}/{section}`
          $.ajax({url: endpoint, success: function(result){
                 $("#comparison_results").append(result);
 
@@ -47,8 +47,25 @@
 } 
 
     function sync() {
-        alert("syncing");
+        $("#comparison_results").find(".list-group-item.active").each(function() {
+            var guid = $(this).attr("data-guid");
+            var libraryID = $(this).attr("data-libraryID");
+            var item = { "libraryID" : libraryID, "guid" : guid }; 
+            syncItem(item);
+          }});
+
+        });
+ 
 }
+
+       function syncItem(item) {
+
+        var syncEndpoint = $`{SCRIPTROOT}/sync/{item.libraryID}/{item.guid}`;
+         $.ajax({url: syncEndpoint, success: function(result){
+                $("#sync_results").append(result);
+          }});
+}
+
     function toggleSelect() {
         alert("toggling Select");
 }
