@@ -65,6 +65,17 @@ def media(serverName, section):
     sortedResults = sorted([r.title for r in results])
     return json.dumps(sortedResults, ensure_ascii=False)
 
+@app.route('/search/<string:theirServerName>/<int:sectionID>/<string:guid>', methods=['POST'])
+def search(sectionID, guid):
+    guid = urllib.unquote(guid).decode('utf-8')
+    plexsync = PlexSync()
+    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    theirServer = plexsync.getServer(theirServerName)
+    section = theirServer.getSectionByID(sectionID)
+    result = section.search(guid=guid)
+    return json.dumps(result.title)
+
+
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
@@ -93,13 +104,12 @@ def compare(yourServerName, theirServerName, sectionName=None):
         for r in results:
                 m = plexsync.getAPIObject(r)
                 result_dict = {}
-                result_dict['title'] = r.title
+                result_dict['title'] = m.title
                 print(m.overview)
                 result_dict['overview'] = m.overview
-                result_dict['key'] = r.ratingKey
-                result_dict['sectionID'] = r.librarySectionID
-                result_dict['year'] = r.year
-                result_dict['guid'] = r.guid
+                result_dict['sectionID'] = m.librarySectionID
+                result_dict['year'] = m.year
+                result_dict['guid'] = m.guid
                 if len(m.images) > 0:
                     result_dict['image'] = m.images[0]['url'].replace("http", "https")
                 result_dict['rating'] = m.rating
