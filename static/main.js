@@ -27,6 +27,7 @@
             sectionSelect = $(that).siblings(".section");
             sectionSelect.empty();
             sectionSelect.append(new Option("Select a Section", null, true, true));
+            $("#compare").show();
             $.each(response, function(index, item) {
                 sectionSelect.append(new Option(item, item));
             });
@@ -38,7 +39,7 @@
         var serverB = $("#serverB").val();
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
-        var endpoint = $`{SCRIPTROOT}/compare/{serverA}/{serverB}/{section}`
+        var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
          $.ajax({url: endpoint, success: function(result){
                 $("#comparison_results").append(result);
 
@@ -49,25 +50,40 @@
     function sync() {
         $("#comparison_results").find(".list-group-item.active").each(function() {
             var guid = $(this).attr("data-guid");
-            var libraryID = $(this).attr("data-libraryID");
-            var item = { "libraryID" : libraryID, "guid" : guid }; 
+            var sectionID = $(this).attr("data-sectionID");
+            var item = { "sectionID" : sectionID, "guid" : guid }; 
             syncItem(item);
-          }});
+          });
 
-        });
- 
 }
 
        function syncItem(item) {
+        // use encode component instead of encodeURI to properly handle the slashes
+        urlEncodedGUID = encodeURIComponent(item.guid); 
+        var syncEndpoint = '/sync/' + item.sectionID + '/' + urlEncodedGUID;
 
-        var syncEndpoint = $`{SCRIPTROOT}/sync/{item.libraryID}/{item.guid}`;
-         $.ajax({url: syncEndpoint, success: function(result){
-                $("#sync_results").append(result);
+        $.ajax({url: syncEndpoint, success: function(result){
+            $("#sync_results").append(result);
           }});
 }
 
-    function toggleSelect() {
-        alert("toggling Select");
+    function toggleSelected() {
+        var that = this;
+        var selected =  $("#toggleSelected").attr('data-selected');
+
+        if (selected) {
+            $(".list-group-item").each(function() {
+                $(this).removeClass('active');
+            });
+        }
+        else {
+
+            $(".list-group-item").each(function() {
+                $(this).addClass('active');
+             });
+        
+             selected.attr("data-selected", true);
+        }
 }
 
 
@@ -83,8 +99,18 @@
     }
 
     $( document ).ready(function() {
-      $(".server").prepend(new Option("Select a Server", null, true, true));  
-      $("#serverA").change(onSelectServer);
-      $(".section").change(onSelectSection);
+          $(".server").prepend(new Option("Select a Server", null, true, true));  
+          $("#serverA").change(onSelectServer);
+          $(".section").change(onSelectSection);
+          $("#compare").hide();
+          $('#list').click(function(event){
+            event.preventDefault();
+            $('#comparison_results .item').addClass('list-group-item');});
+    
+          $('#grid').click(function(event){
+                event.preventDefault();
+                $('#comparison_results .item').removeClass('list-group-item');
+                $('#comparison_results .item').addClass('grid-group-item');});
+
       });
 
