@@ -31,17 +31,16 @@ def login():
 
 @app.route('/home', methods=['GET'])
 def home():
-
-    plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
-    servers = plexsync.getServers(plexAccount)
-    sortedServers = sorted([server.name for server in servers])
-   
-    return render_template('home.html', server_list=sortedServers)   
-
+   try:
+        plexsync = PlexSync()
+        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        servers = plexsync.getServers(plexAccount)
+        sortedServers = sorted([server.name for server in servers])
+        return render_template('home.html', server_list=sortedServers)   
+   except KeyError:
+        return redirect('https://plexsync.rtd3.me')
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
-
 def sections(serverName):
     print(f"routing for {serverName}")
     plexsync = PlexSync()
