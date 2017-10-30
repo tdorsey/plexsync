@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from plexsync.plexsync import PlexSync
 
 import json
+import urllib.parse
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
@@ -64,14 +66,17 @@ def media(serverName, section):
     sortedResults = sorted([r.title for r in results])
     return json.dumps(sortedResults, ensure_ascii=False)
 
-@app.route('/search/<string:theirServerName>/<int:sectionID>/<string:guid>', methods=['POST'])
-def search(sectionID, guid):
-    guid = urllib.unquote(guid).decode('utf-8')
+@app.route('/search', methods=['POST'])
+def search():
+    guid = request.form['guid']
+    guid = urllib.parse.unquote(guid)
+    server = request.form['server']
+    section = request.form['section']
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
-    theirServer = plexsync.getServer(theirServerName)
-    section = theirServer.getSectionByID(sectionID)
-    result = section.search(guid=guid)
+    theirServer = plexsync.getServer(server)
+    section = theirServer.library.sectionByID(section)
+    result = section.search(guid=guid).pop()
     return json.dumps(result.title)
 
 
@@ -108,7 +113,8 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['overview'] = m.overview
                 result_dict['sectionID'] = m.librarySectionID
                 result_dict['year'] = m.year
-                result_dict['guid'] = m.guid
+                result_dict['guid'] = urllib.parse.quote_plus(m.guid)
+
                 if len(m.images) > 0:
                     result_dict['image'] = m.images[0]['url'].replace("http", "https")
                 result_dict['rating'] = m.rating

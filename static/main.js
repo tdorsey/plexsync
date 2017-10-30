@@ -58,13 +58,13 @@
 }
 
        function syncItem(item) {
-        // use encode component instead of encodeURI to properly handle the slashes
-        urlEncodedGUID = encodeURIComponent(item.guid); 
-        var syncEndpoint = '/sync/' + item.sectionID + '/' + urlEncodedGUID;
+        theirServer = $("#serverB").val(); 
+        var syncEndpoint = "/search";
+         $.post(syncEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid }, 
+            function(result) {
+                $("sync_results").append(result);
+            });
 
-        $.ajax({url: syncEndpoint, success: function(result){
-            $("#sync_results").append(result);
-          }});
 }
 
     function toggleSelected() {
