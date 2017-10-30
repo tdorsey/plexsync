@@ -77,8 +77,8 @@ def search():
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
-    return json.dumps(result.title)
-
+    m = plexsync.getAPIObject(result)
+    plexsync.sendMediaToThirdParty([m])
 
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
