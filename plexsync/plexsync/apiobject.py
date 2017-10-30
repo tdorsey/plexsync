@@ -38,6 +38,7 @@ class APIObject(Video):
         self.titleSlug = None
         self.images = []
         self.seasons = []
+        self.librarySectionID = video.librarySectionID
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
