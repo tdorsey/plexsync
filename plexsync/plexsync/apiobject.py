@@ -27,12 +27,13 @@ class APIObject(Video):
             self.title = video.show().title
             self.type = APIObjectType.Show
             self.provider = show_provider
+            self.guid = video.show().guid
         else:
             self.title = video.title
             self.type = APIObjectType.Movie
             self.provider = movie_provider
+            self.guid = video.guid
 
-        self.guid = self._extractGUID(video.guid)
         self.search_term = self._createSearchTerm()
         self.qualityProfileId = None
         self.titleSlug = None
@@ -47,10 +48,11 @@ class APIObject(Video):
         return self.type == APIObjectType.Show
 
     def _createSearchTerm(self):
+        shortGUID = self._extractGUID(self.guid)
         if self.isMovie():
-            return str(f"imdb:tt{self.guid}")
+            return str(f"imdb:tt{shortGUID}")
         elif self.isShow():
-            return str(f"tvdb:{self.guid}")
+            return str(f"tvdb:{shortGUID}")
 
     def __key(self):
         return (self.guid)
