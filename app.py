@@ -92,6 +92,7 @@ def download():
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
+    result.download()
 
 
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])

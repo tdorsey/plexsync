@@ -66,7 +66,7 @@
             });
 
 }
-    function download() {
+    function downloadSelected() {
         $("#comparison_results").find(".list-group-item.active").each(function() {
             var guid = $(this).attr("data-guid");
             var sectionID = $(this).attr("data-sectionID");
