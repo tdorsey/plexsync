@@ -8,6 +8,8 @@ EXPOSE 5000
 ENTRYPOINT [ "python3" ]
 CMD ["app.py"]
 
+VOLUME /downloads
+
 COPY requirements.txt .
 COPY app.py .
 COPY /plexsync/ ./plexsync
