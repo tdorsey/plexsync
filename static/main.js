@@ -66,6 +66,25 @@
             });
 
 }
+    function download() {
+        $("#comparison_results").find(".list-group-item.active").each(function() {
+            var guid = $(this).attr("data-guid");
+            var sectionID = $(this).attr("data-sectionID");
+            var item = { "sectionID" : sectionID, "guid" : guid }; 
+            downloadItem(item);
+          });
+
+}
+
+       function downloadItem(item) {
+        theirServer = $("#serverB").val(); 
+        var downloadEndpoint = "/download";
+         $.post(downloadEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid }, 
+            function(result) {
+                $("download_results").append(result);
+            });
+
+}
 
     function toggleSelected() {
         var that = this;
