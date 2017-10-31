@@ -81,6 +81,19 @@ def search():
     response = plexsync.sendMediaToThirdParty(m)
     return render_template('third_party.html', message=response)
 
+@app.route('/download', methods=['POST'])
+def download():
+    guid = request.form['guid']
+    guid = urllib.parse.unquote(guid)
+    server = request.form['server']
+    section = request.form['section']
+    plexsync = PlexSync()
+    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    theirServer = plexsync.getServer(server)
+    section = theirServer.library.sectionByID(section)
+    result = section.search(guid=guid).pop()
+
+
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
