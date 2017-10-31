@@ -63,7 +63,7 @@ for section in sections:
 
     their_new_media = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
-    printMedia(their_new_media, section)
+    plexsync.printMedia(their_new_media, section)
 
     wantedMedia = chooseMedia(their_new_media)
     plexsync.sendMediaToThirdParty(wantedMedia)
