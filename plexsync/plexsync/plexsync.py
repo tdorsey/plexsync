@@ -87,7 +87,11 @@ class PlexSync:
             elif media.isShow():
                  return str(f"tvdb:{guid}")
 
-    def sendMediaToThirdParty(self, media: list):
+    def sendMediaToThirdParty(self, m):
+            m.fetchMissingData()
+            return m.provider.createEntry(m)
+
+    def sendMediaListToThirdParty(self, media: list):
         for m in media:
             m.fetchMissingData()
             m.provider.createEntry(m)
