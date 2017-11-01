@@ -70,8 +70,8 @@ class PlexSync:
             a = APIObject(r)
             api_objects.append(a)
         return set(api_objects)
-
-        def printMedia(media, section):
+   
+     def printMedia(self, media, section):
             count = len(media)
             printHeaderLine()
             print(f"They have {count} items in {section}")
@@ -80,7 +80,7 @@ class PlexSync:
                 print(m.title)
             printHeaderLine()
 
-        def createSearchTermFromMedia(media):
+    def createSearchTermFromMedia(media):
             guid = media.guid
             if media.isMovie():
                return str(f"imdb:{guid}")

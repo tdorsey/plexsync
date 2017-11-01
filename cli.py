@@ -63,7 +63,12 @@ for section in sections:
 
     their_new_media = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
-    plexsync.printMedia(their_new_media, section)
+#    plexsync.printMedia(their_new_media, section)
 
     wantedMedia = chooseMedia(their_new_media)
-    plexsync.sendMediaToThirdParty(wantedMedia)
+    for m in wantedMedia:
+        m.download(savepath="/srv/plexsync/downloads/",keep_original_name=True)
+        print(f"downloaded {m.title}")
+
+
+#    plexsync.sendMediaToThirdParty(wantedMedia)
