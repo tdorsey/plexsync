@@ -7,6 +7,7 @@ import requests
 import urllib
 
 from plexapi.myplex import MyPlexAccount
+from plexapi import utils
 
 from plexsync.base import *
 from plexsync.apiobject import APIObject
@@ -71,7 +72,7 @@ class PlexSync:
             api_objects.append(a)
         return set(api_objects)
    
-     def printMedia(self, media, section):
+    def printMedia(self, media, section):
             count = len(media)
             printHeaderLine()
             print(f"They have {count} items in {section}")
@@ -127,4 +128,13 @@ class PlexSync:
         m.fetchMissingData()
         return m
         
+    def download(self, media):
+        for part in media.iterParts():
+            # We do this manually since we dont want to add a progress to Episode etc
+            filename = f"{media.title} [{media.year}].{part.container}"
+            url = media._server.url('%s?download=1' % part.key)
+            savepath = settings.get('download', 'content_folder')
+            filepath = utils.download(url, filename=filename, savepath=savepath, session=media._server._session, showstatus=True)
+            print(f"{filepath}")
+            print(f"downloaded {media.title}")
 
