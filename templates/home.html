@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="container">
+    <div class="well well-sm">
+        <strong>Display</strong>
+        <div class="btn-group">
+            <a href="#" id="list" class="btn btn-default btn-sm"><span class="glyphicon 
+glyphicon-th-list">
+            </span>List</a> <a href="#" id="grid" class="btn btn-default btn-sm"><span
+                class="glyphicon glyphicon-th"></span>Grid</a>
+    <select class="server" id="serverA">
+       {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
+    </select>
+    <select class="server" id="serverB">
+   {% for server in server_list %}
+-            <option value="{{ server }}">{{ server }}</option>
+-        {% endfor %}
+    </select>
+
+    <select class="section" id="section">
+    </select>
+            <strong>Actions</strong>
+        </div>
+        <div class="btn-group">
+            <a href="#" onclick="toggleSelected()" id="toggleSelected" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-check" </span>Select All </a>
+            <a href="#" onclick="sync()" id="sync" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-refresh"> </span>Sync Selected </a>
+            <a href="#" onclick="downloadSelected()" id="download" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-download"> </span>Download Selected </a>
+            <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-sort"> </span>Compare Libraries</a> 
+
+</div>
+    </div>
+
+    <div id="comparison_results" class="row list-group media collapse in" data-toggle="items">
+        <section class="section_title" id="comparison_title"></section>
+    </div>
+<div class="messages" /> 
+{% endblock %}
+

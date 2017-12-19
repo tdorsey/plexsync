@@ -5,7 +5,7 @@ import sys
 
 from pathlib import Path
 
-CONFIG_PATH = str(os.path.join(Path.home(), '.config', 'plexsync', 'config.ini'))
+CONFIG_PATH = str(os.path.join('/config', 'config.ini'))
 
 class APIObjectType(enum.Enum):
     Show = 1
