@@ -40,6 +40,7 @@ class APIObject(Video):
         self.images = []
         self.seasons = []
         self.librarySectionID = video.librarySectionID
+        self.downloadURL = self._getDownloadURL(video)
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
@@ -53,6 +54,13 @@ class APIObject(Video):
             return str(f"imdb:tt{shortGUID}")
         elif self.isShow():
             return str(f"tvdb:{shortGUID}")
+
+    def _getDownloadURL(self, video):
+        for part in video.iterParts():
+        #We do this manually since we dont want to add a progress to Episode etc
+            url = video._server.url('%s?download=1' %part.key)
+        return url
+
 
     def __key(self):
         return (self.guid)

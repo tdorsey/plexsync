@@ -124,6 +124,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 m = plexsync.getAPIObject(r)
                 result_dict = {}
                 result_dict['title'] = m.title
+                result_dict['downloadURL'] = m.downloadURL
                 print(m.overview)
                 result_dict['overview'] = m.overview
                 result_dict['sectionID'] = m.librarySectionID
