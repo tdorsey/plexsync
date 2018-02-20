@@ -3,12 +3,13 @@ import enum
 
 from distutils.util import strtobool
 
-from plexsync.base import *
+from plexsync.base import Base
 from plexsync.setting import *
 from plexsync.thirdparty import *
 from plexsync.thirdpartyservice import *
 
-settings = getSettings()
+base = Base()
+settings = base.getSettings()
 
 #ignoreWithFiles: Unmonitors any episodes with a file
 #ignoreWithoutFiles: Unmonitors any episodes without a file

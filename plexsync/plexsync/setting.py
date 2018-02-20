@@ -1,6 +1,6 @@
-from plexsync.base import *
-
-settings = getSettings()
+from plexsync.base import Base
+base = Base()
+settings = base.getSettings()
 
 class Setting():
     def __init__(self, key, section, prompt):
