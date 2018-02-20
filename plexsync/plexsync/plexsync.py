@@ -5,11 +5,12 @@ import re
 import enum
 import requests
 import urllib
+import logging
 
 from plexapi.myplex import MyPlexAccount
 from plexapi import utils
 
-from plexsync.base import *
+from plexsync.base import Base
 from plexsync.apiobject import APIObject
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
@@ -22,8 +23,8 @@ class PlexSync:
 
         self.account = None
         self.servers = None
-    
-        self.settings = getSettings()
+        base = Base()
+        self.settings = base.getSettings()
 
     def printHeaderLine():
         print('*******************')
@@ -129,12 +130,20 @@ class PlexSync:
         return m
         
     def download(self, media):
+        log = logging.getLogger('plexsync')
+
+        log.debug('download')
         for part in media.iterParts():
             # We do this manually since we dont want to add a progress to Episode etc
             filename = f"{media.title} [{media.year}].{part.container}"
             url = media._server.url('%s?download=1' % part.key)
-            savepath = settings.get('download', 'content_folder')
-            filepath = utils.download(url, filename=filename, savepath=savepath, session=media._server._session, showstatus=True)
-            print(f"{filepath}")
-            print(f"downloaded {media.title}")
+            savepath = self.settings.get('download', 'content_folder')
+            log.debug(f"filename: {filename}")
+            log.debug(f"savepath: {savepath}")
+            log.debug(f"url: {url}")
+            log.debug(f"session: {media._server._session}")
+
+            filepath = utils.download(url, filename=filename, savepath=savepath, session=media._server._session)
+            log.debug(f"{filepath}")
+            log.debug(f"downloaded {media.title}")
 
