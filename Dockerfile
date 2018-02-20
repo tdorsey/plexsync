@@ -6,7 +6,9 @@ WORKDIR /app
 EXPOSE 5000
 
 ENTRYPOINT [ "python3" ]
-CMD ["app.py"]
+
+#Set python output to unbuffered, so print statements are visible
+CMD ["-u", "app.py"]
 
 VOLUME /downloads
 
