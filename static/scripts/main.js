@@ -33,8 +33,8 @@
         var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
          $.ajax({url: endpoint, success: function(result){
                 $("#comparison_results").append(result);
-
-          }}); 
+                  resizeMediaDivs(); 
+          }});
 
 } 
 
@@ -130,15 +130,14 @@ $.ajax({
    function resizeMediaDivs() {
     var maxHeight = 0;
 
-    $(".media").each(function(){
+    $(".result").each(function(){
         if ($(this).height() > maxHeight) { maxHeight = $(this).height(); }
     });
     
-    $(".media").height(maxHeight);
+    $(".result").height(maxHeight);
 
     }
     $( document ).ready(function() {
-          resizeMediaDivs();
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
