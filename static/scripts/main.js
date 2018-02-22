@@ -33,7 +33,7 @@
         var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
          $.ajax({url: endpoint, success: function(result){
                 $("#comparison_results").append(result);
-
+                resizeMediaDivs();
           }}); 
 
 } 
@@ -130,15 +130,21 @@ $.ajax({
    function resizeMediaDivs() {
     var maxHeight = 0;
 
-    $(".media").each(function(){
-        if ($(this).height() > maxHeight) { maxHeight = $(this).height(); }
+    $(".result").each(function(index, result){
+        parent = $(result).parent();
+        h = $(".result").height();
+        if (h > maxHeight) {
+            maxHeight = h; 
+            var movie = $(result).find(".list-group-item-heading").text();
+            console.log(movie + " is taller" + h + "px"); 
+        }
     });
-    
-    $(".media").height(maxHeight);
+
+    console.log(maxHeight);
+    //$(".result").height(maxHeight);
 
     }
     $( document ).ready(function() {
-          resizeMediaDivs();
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
