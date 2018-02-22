@@ -7,9 +7,9 @@ EXPOSE 5000
 
 ENTRYPOINT [ "python3" ]
 
-#Set python output to unbuffered, so print statements are visible
-CMD ["-u", "app.py"]
+CMD ["app.py"]
 
+VOLUME /config
 VOLUME /downloads
 
 COPY requirements.txt .
