@@ -1,23 +1,28 @@
 {% for m in media %}
-       <div class="list-group-item item col-xs-4 col-lg-4" data-guid="{{ m.guid }}" data-sectionID="{{ m.sectionID }}">                                                                
+       <div class="result col-xs-4 col-lg-4" id="{{ m.guid }}" data-guid="{{ m.guid }}" data-server="{{ m.server }}" data-sectionID="{{ m.sectionID }}">                                                                
             <div class="thumbnail">                                                                          
                 <img class="group list-group-image" src="{{ m.image }}" alt="{{ m.title }}" />                                                                                                           
                 <div class="caption">                                                                        
-                    <h4 class="group inner list-group-item-heading">                                         
-                        {{ m.title }} </h4>                                                                   
+                    <h4 class="group inner list-group-item-heading"> {{ m.title }} </h4>                                                                   
                     <p class="group inner list-group-item-text"> {{ m.overview }} </p>
-                    <div class="row">                                                                        
-                        <div class="col-xs-12 col-md-3">                                                     
-                            <p class="lead"> ( {{ m.year }} ) </p>                                                                  
+                <div class="row">                                                                        
+                     <div class="col-xs-12 col-md-3">                                                     
+                            <p class="lead"> ({{ m.year }}) </p>                                                                  
                         </div>                                                                               
                         <div class="col-xs-12 col-md-3">                                                     
                             <p class="lead">  {{ m.rating['value'] }} with {{ m.rating['votes'] }} votes </p>                                                                  
-                        </div>                                                                               
-                        <div class="col-xs-12 col-md-6">                                                     
-                            <a class="btn btn-success" href="{{m.downloadURL}}" download>Download</a>                                                                                                     
-                        </div>                                                                               
-                    </div>                                                                                   
-                </div>                                                                                       
-            </div>                                                                                           
-        </div>                                      
+                        </div>
+		</div> <!-- row -->  
+		<div class="row">                                                                                                                                
+                     <div class="col-xs-12 col-md-6">
+                          <a class="btn btn-success" href="{{m.downloadURL}}" download>Download</a>
+	             </div>                                                                                                     
+                     <div class="col-xs-12 col-md-6">
+			  <button onclick="transfer({{m}})"type="button" class="btn btn-danger pull-right">Transfer</button>
+		     </div>
+                </div> <!--row-->                                                                                   
+             </div> <!-- caption -->                                                                                       
+            </div> <!-- group -->                                                                                          
+        </div> <!-- thumbnail -->
+</div> <!-- item -->                                     
 {% endfor %}

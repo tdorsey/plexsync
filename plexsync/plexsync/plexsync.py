@@ -5,11 +5,13 @@ import re
 import enum
 import requests
 import urllib
+import logging
+import os
 
 from plexapi.myplex import MyPlexAccount
 from plexapi import utils
 
-from plexsync.base import *
+from plexsync.base import Base
 from plexsync.apiobject import APIObject
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
@@ -22,8 +24,8 @@ class PlexSync:
 
         self.account = None
         self.servers = None
-    
-        self.settings = getSettings()
+        base = Base()
+        self.settings = base.getSettings()
 
     def printHeaderLine():
         print('*******************')
@@ -129,12 +131,27 @@ class PlexSync:
         return m
         
     def download(self, media):
-        for part in media.iterParts():
-            # We do this manually since we dont want to add a progress to Episode etc
-            filename = f"{media.title} [{media.year}].{part.container}"
-            url = media._server.url('%s?download=1' % part.key)
-            savepath = settings.get('download', 'content_folder')
-            filepath = utils.download(url, filename=filename, savepath=savepath, session=media._server._session, showstatus=True)
-            print(f"{filepath}")
-            print(f"downloaded {media.title}")
+        log = logging.getLogger('plexsync')
+
+        log.debug('download')
+        try:
+            for part in media.iterParts():
+                # We do this manually since we dont want to add a progress to Episode etc
+                renamed_file = f"{media.title} [{media.year}].{part.container}"
+                savepath = self.settings.get('download', 'content_folder')
+                log.debug(f"savepath: {savepath}")
+                log.debug(f"media: {media}")
+                log.debug(f"server: {media._server}")
+                log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
+                url = media._server.url(f"{part.key}?download=1", includeToken=True)
+                log.debug(f"url: {url}")
+                renamed_file = f"{media.title} [{media.year}].{part.container}"
+                log.debug(renamed_file) 
+                filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
+            #This version of download forces a  transcode
+            #    downloaded_file = media.download(savepath=savepath)
+                log.debug(f"{filepath}")
+                log.debug(f"downloaded {renamed_file}")
+        except Exception as e:
+            log.debug(e)
 
