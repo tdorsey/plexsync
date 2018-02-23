@@ -3,15 +3,6 @@
         var section = $(this).val();
         var server = $("#serverA").val();
         var endpoint = $`{SCRIPTROOT}/servers/{server}/{section}`;
-//        $.post(endpoint, { server : server, section : section }, function(response) {
- //           sectionMedia = $(that).siblings(".media")
-   //         sectionMedia.empty()
-     //       $.each(response, function(index, item) {
-       //         sectionMedia.append('<li>' + item + '</li>');
-         //   });
-          // $(that).parent().find(".section_title").text(server);
-//        }, 'json');
-
 } 
     function onSelectServer(e) {
         var that = this;
@@ -85,8 +76,28 @@
             });
 
 }
+function transfer(item) {
+console.log(item);
+guid = encodeURIComponent(item.guid);
 
-    function toggleSelected() {
+var transferEndpoint = "/transfer";
+var trimmed = {
+
+	guid:  item.guid,
+	server: item.server,
+	section:  item.sectionID
+
+ }
+
+
+$.ajax({
+  type: 'POST',
+  url: transferEndpoint,
+  data: trimmed
+});
+
+}
+   function toggleSelected() {
         var that = this;
         var selected =  $("#toggleSelected").attr('data-selected');
 
