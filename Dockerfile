@@ -6,8 +6,10 @@ WORKDIR /app
 EXPOSE 5000
 
 ENTRYPOINT [ "python3" ]
+
 CMD ["app.py"]
 
+VOLUME /config
 VOLUME /downloads
 
 COPY requirements.txt .

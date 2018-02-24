@@ -12,7 +12,9 @@ from plexsync.thirdpartyservice import *
 
 from pick import pick
 
-settings = getSettings()
+base = Base()
+
+settings = base.getSettings()
 
 class ThirdParty():
     def __init__(self, service):
