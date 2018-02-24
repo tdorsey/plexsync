@@ -18,7 +18,7 @@ from plexsync.thirdparty import ThirdParty, ThirdPartyService
 class PlexSync:
     
     def __init__(self):
-
+        self.log = logging.getLogger('plexsync')
         self.show_provider = ThirdParty(ThirdPartyService.Show)
         self.movie_provider = ThirdParty(ThirdPartyService.Movie)
 
@@ -33,12 +33,23 @@ class PlexSync:
     def getSettings(self):
         return self.settings
 
-    def getServers(self, account):
+    def getServers(self, account=None):
         if not account:
             account = self.account
         resources = account.resources()
         self.servers = filter(lambda x: x.provides == 'server', resources)
         return self.servers
+
+    def getOwnedServers(self):
+        if not self.servers:
+            self.servers = self.getServers()
+        ownResources  = filter(lambda x: x.owned == True, self.servers)
+        self.log.debug("ownResources {ownResources}")
+        ownServers = []
+        for resource in ownResources:
+            ownServers.append(resource.connect())
+        self.log.debug("ownServers {ownServers}")
+        return ownServers
 
     def getServer(self, serverName):
         return self.account.resource(serverName).connect()
@@ -130,10 +141,10 @@ class PlexSync:
         m.fetchMissingData()
         return m
         
-    def download(self, media):
+    def transfer(self, media):
         log = logging.getLogger('plexsync')
 
-        log.debug('download')
+        log.debug('transfer')
         try:
             for part in media.iterParts():
                 # We do this manually since we dont want to add a progress to Episode etc
@@ -148,9 +159,19 @@ class PlexSync:
                 renamed_file = f"{media.title} [{media.year}].{part.container}"
                 log.debug(renamed_file) 
                 filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
-            #This version of download forces a  transcode
-            #    downloaded_file = media.download(savepath=savepath)
                 log.debug(f"{filepath}")
+                log.debug(f"downloaded {renamed_file}")
+        except Exception as e:
+            log.debug(e)
+    def download(self, media):
+        log = logging.getLogger('plexsync')
+        try:
+            for part in media.iterParts():
+                url = media._server.url(f"{part.key}?download=1", includeToken=True)
+                log.debug(f"url: {url}")
+                renamed_file = f"{media.title} [{media.year}].{part.container}"
+                log.debug(renamed_file) 
+                downloaded_file = media.download(savepath=savepath)
                 log.debug(f"downloaded {renamed_file}")
         except Exception as e:
             log.debug(e)
