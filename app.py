@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
@@ -101,15 +102,28 @@ def transfer():
         section = request.form['section']
         guid = request.form['guid']
         guid = urllib.parse.unquote(guid)
-        #return json.dumps({"server": server, "section": section, "guid": guid }); 
         plexsync = PlexSync()
         plexAccount = plexsync.getAccount(session['username'], session['password'])
-        theirServer = plexsync.getServer(server)
-        section = theirServer.library.sectionByID(section)
-        result = section.search(guid=guid).pop()
 
-        plexsync.download(result)
+        ownedServers = plexsync.getOwnedServers()
+        currentUserServer = session['yourServer']
+        app.logger.debug(f"ownedServers {ownedServers}")
+        app.logger.debug(f"currentServer {currentUserServer}")
+        authorized = False
+        for s in ownedServers:
+            if s.friendlyName == currentUserServer:
+                app.logger.debug(f"authorized")
+                authorized = True
 
+            theirServer = plexsync.getServer(server)
+            section = theirServer.library.sectionByID(section)
+            result = section.search(guid=guid).pop()
+        if authorized: 
+           plexsync.transfer(result)
+        else:
+            app.logger.debug(f"not authorized")
+            msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
+            return json.dumps(msg)
     except Exception as e:
         return json.dumps(str(e))
 
@@ -130,6 +144,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
         sectionsToCompare.append(sectionName)
 
     yourServer = plexsync.getServer(yourServerName)
+    session['yourServer'] = yourServerName
     theirServer = plexsync.getServer(theirServerName)
     
     for section in sectionsToCompare:
@@ -190,3 +205,4 @@ if __name__ == '__main__':
     app.logger.setLevel(logging.DEBUG)
 
     app.run(host='0.0.0.0', port=5000)
+    
