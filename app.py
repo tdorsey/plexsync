@@ -1,13 +1,16 @@
+
 #!/usr/bin/python3
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
 
 import json
 import urllib.parse
-
+import logging
+import sys
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
+app.config['LOGGER_NAME'] = 'plexsync'
 
 plexsync = None
 
@@ -27,7 +30,6 @@ def login():
     try:
         plexAccount = plexsync.getAccount(session['username'], session['password'])
         return redirect('https://plexsync.rtd3.me/home', code=303)
-    
     except Exception as e:
         return json.dumps(str(e))
 
@@ -83,7 +85,6 @@ def search():
 
 @app.route('/download', methods=['POST'])
 def download():
-    guid = request.form['guid']
     guid = urllib.parse.unquote(guid)
     server = request.form['server']
     section = request.form['section']
@@ -93,6 +94,39 @@ def download():
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
     result.download()
+
+@app.route('/transfer', methods=['POST'])
+def transfer():
+    try:
+        server = request.form['server']
+        section = request.form['section']
+        guid = request.form['guid']
+        guid = urllib.parse.unquote(guid)
+        plexsync = PlexSync()
+        plexAccount = plexsync.getAccount(session['username'], session['password'])
+
+        ownedServers = plexsync.getOwnedServers()
+        currentUserServer = session['yourServer']
+        app.logger.debug(f"ownedServers {ownedServers}")
+        app.logger.debug(f"currentServer {currentUserServer}")
+        authorized = False
+        for s in ownedServers:
+            if s.friendlyName == currentUserServer:
+                app.logger.debug(f"authorized")
+                authorized = True
+
+            theirServer = plexsync.getServer(server)
+            section = theirServer.library.sectionByID(section)
+            result = section.search(guid=guid).pop()
+        if authorized: 
+           plexsync.transfer(result)
+        else:
+            app.logger.debug(f"not authorized")
+            msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
+            return json.dumps(msg)
+    except Exception as e:
+        return json.dumps(str(e))
+
 
 
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
@@ -110,6 +144,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
         sectionsToCompare.append(sectionName)
 
     yourServer = plexsync.getServer(yourServerName)
+    session['yourServer'] = yourServerName
     theirServer = plexsync.getServer(theirServerName)
     
     for section in sectionsToCompare:
@@ -130,7 +165,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['sectionID'] = m.librarySectionID
                 result_dict['year'] = m.year
                 result_dict['guid'] = urllib.parse.quote_plus(m.guid)
-
+                result_dict['server'] = theirServer.friendlyName
                 if len(m.images) > 0:
                     result_dict['image'] = m.images[0]['url'].replace("http", "https")
                 result_dict['rating'] = m.rating
@@ -166,4 +201,8 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
+    app.logger.addHandler(logging.StreamHandler(sys.stdout))
+    app.logger.setLevel(logging.DEBUG)
+
     app.run(host='0.0.0.0', port=5000)
+    
