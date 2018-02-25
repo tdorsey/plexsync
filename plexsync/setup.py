@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='plexsync',
-      version='0.1',
+      version='0.6',
       description='Show Plex media they have that you don\'t',
       url='http://github.com/tdorsey/plexsync',
       license='MIT',

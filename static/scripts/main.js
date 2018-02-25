@@ -77,6 +77,7 @@
 
 }
 function transfer(item) {
+
 console.log(item);
 guid = encodeURIComponent(item.guid);
 
@@ -89,12 +90,18 @@ var trimmed = {
 
  }
 
-
 $.ajax({
-  type: 'POST',
+  type: "POST",
   url: transferEndpoint,
-  data: trimmed
-});
+  data: trimmed,
+  complete: function(jqXHR, textStatus)  {
+    var transferNotification = new Notify('Transfer Status', {
+        body: jqXHR.responseText,
+        notifyShow: function() { console.log(textStatus); }
+          });
+        transferNotification.show();
+  }
+ });
 
 }
    function toggleSelected() {
@@ -111,7 +118,7 @@ $.ajax({
             $(".list-group-item").each(function() {
                 $(this).addClass('active');
              });
-        
+
              selected.attr("data-selected", true);
         }
 }
@@ -144,7 +151,11 @@ $.ajax({
     //$(".result").height(maxHeight);
 
     }
+
+    global.Notify = require('notifyjs');
     $( document ).ready(function() {
+          global.compareLibraries = compareLibraries;
+          global.transfer = transfer;
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
