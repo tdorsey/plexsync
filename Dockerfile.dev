@@ -16,7 +16,7 @@ RUN apk update && apk add nodejs
 RUN npm install -g browserify notifyjs
 RUN npm link notifyjs
 
-COPY requirements.txt .
+COPY requirements.txt.dev .
 COPY config.ini /config/
 COPY /templates ./templates
 COPY /static  ./static

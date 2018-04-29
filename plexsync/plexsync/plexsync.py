@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-
 import re
 import enum
 import requests
@@ -12,7 +11,7 @@ from plexapi.myplex import MyPlexAccount
 from plexapi import utils
 
 from plexsync.base import Base
-from plexsync.apiobject import APIObject
+from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 class PlexSync:
@@ -142,33 +141,44 @@ class PlexSync:
         return m
         
     def transfer(self, media):
-        log = logging.getLogger('plexsync')
 
-        log.debug('transfer')
+        self.log.debug('transfer')
         try:
-            for part in media.iterParts():
-                # We do this manually since we dont want to add a progress to Episode etc
-                renamed_file = f"{media.title} [{media.year}].{part.container}"
-                savepath = self.settings.get('download', 'content_folder')
-                log.debug(f"savepath: {savepath}")
-                log.debug(f"media: {media}")
-                log.debug(f"server: {media._server}")
-                log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
-                url = media._server.url(f"{part.key}?download=1", includeToken=True)
-                log.debug(f"url: {url}")
-                renamed_file = f"{media.title} [{media.year}].{part.container}"
-                log.debug(renamed_file) 
-                filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
-                log.debug(f"{filepath}")
-                log.debug(f"downloaded {renamed_file}")
+            if media.type == "show":
+               self.log.debug(f"Getting episodes") 
+               savepath = self.settings.get('download', 'tv_folder')
+               for episode in media.episodes():
+                 self.log.info(f"Downloading {episode.title}")
+                 tmp = episode.download(savepath)
+                 os.rename(tmp, f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media.container}")
+            if media.type == APIObjectType.Movie:
+               for part in media.iterParts():
+                 #We do this manually since we dont want to add a progress to Episode etc
+                  renamed_file = f"{media.title} [{media.year}].{part.container}"
+                  savepath = self.settings.get('download', 'movie_folder')
+                  self.log.debug(f"savepath: {savepath}")
+                  self.log.debug(f"media: {media}")
+                  self.log.debug(f"server: {media._server}")
+                  self.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
+                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
+                  self.log.debug(f"url: {url}")
+                  renamed_file = f"{media.title} [{media.year}].{part.container}"
+                  self.log.debug(renamed_file)
+                  filepath = utils.download(url=url,
+                                            filename=renamed_file,
+                                            savepath=savepath,
+                                            session=media._server._session,
+                                            token=media._server._token)
+                  self.log.debug(f"{filepath}")
+                  self.log.debug(f"downloaded {renamed_file}")
         except Exception as e:
-            log.debug(e)
+            self.log.debug(e)
     def download(self, media):
         log = logging.getLogger('plexsync')
         try:
             for part in media.iterParts():
                 url = media._server.url(f"{part.key}?download=1", includeToken=True)
-                log.debug(f"url: {url}")
+                self.log.debug(f"url: {url}")
                 renamed_file = f"{media.title} [{media.year}].{part.container}"
                 log.debug(renamed_file) 
                 downloaded_file = media.download(savepath=savepath)

@@ -172,7 +172,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['year'] = m.year
                 result_dict['guid'] = urllib.parse.quote_plus(m.guid)
                 result_dict['server'] = theirServer.friendlyName
-                if len(m.images) > 0:
+                if m.image and len(m.image) > 0:
                     result_dict['image'] = m.image
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)

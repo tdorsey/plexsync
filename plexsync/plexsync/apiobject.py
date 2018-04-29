@@ -21,6 +21,11 @@ from plexsync.thirdparty import ThirdParty, ThirdPartyService
 show_provider = ThirdParty(ThirdPartyService.Show)
 movie_provider = ThirdParty(ThirdPartyService.Movie)
 
+class APIObjectType(enum.Enum):
+    Show = "show"
+    Movie = "movie"
+    Episode = "episode"
+
 class APIObject(Video):
     def __init__(self, video):
         self.log = logging.getLogger('plexsync')
@@ -48,12 +53,16 @@ class APIObject(Video):
         self.search_term = self._createSearchTerm()
         self.qualityProfileId = None
         self.titleSlug = None
-        self.images = []
         self.seasons = []
         self.librarySectionID = video.librarySectionID
         self.downloadURL = self._getDownloadURL(video)
-        self.image = video.banner
-#        self.image = [ (x['url'].replace("http://", "https://")) for x in m.images if x.coverType == 'poster'] 
+        #plex api doesn't support poster directly, just the banner, but it's a plex structured url, so swap it.
+        if video.banner is None:
+           self.log.debug(f"no banner: Falling back to {video.artUrl}")
+           self.image= video.artUrl
+        else:
+           self.log.debug(f"Switching banner to poster {video.banner}")
+           self.image =  video.url(video.banner).replace("banner", "poster")
 
     def isMovie(self):
         return self.type == APIObjectType.Movie
@@ -118,9 +127,11 @@ class APIObject(Video):
         item = data[0]        
         self.log.info(f"{item} media data")
 
+        if not self.image:
+           self.image = item["images"]
+
         if self.isMovie():
             self.titleSlug = item["titleSlug"]
-            self.images = item["images"]
             self.qualityProfile = item["qualityProfileId"]
             self.year = item["year"]    
             self.tmdbId = item["tmdbId"]    
@@ -128,14 +139,12 @@ class APIObject(Video):
             self.rating = item["ratings"]
         elif self.isShow():
             self.titleSlug = item["titleSlug"]
-            self.images = item["images"]
             self.seasons = item["seasons"]
             self.qualityProfile = item["qualityProfileId"]
             self.year = item["year"]
             self.rating = item["ratings"]
         elif self.isEpisode():
              self.titleSlug = item["titleSlug"]
-             self.images = item["images"]
              self.qualityProfile = item["qualityProfileId"]
              self.year = item["year"]
              self.tmdbId = item["tmdbId"]
