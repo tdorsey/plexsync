@@ -42,11 +42,19 @@ class APIObject(Video):
             self.overview = video.summary
             self.rating = video.rating
             self.year = video.year
+            #plex api doesn't support poster directly, just the banner, but it's a plex structured url, so swap it.
+            if video.banner is None:
+              self.log.debug(f"no banner: Falling back to {video.artUrl}")
+              self.image= video.artUrl
+            else:
+              self.log.debug(f"Switching banner to poster {video.banner}")
+              self.image =  video.url(video.banner).replace("banner", "poster")
         elif video.type == "movie":
             self.title = video.title
             self.type = APIObjectType.Movie
             self.provider = movie_provider
             self.guid = video.guid
+            self.image = video.artUrl
         else:
             self.log.debug(f"Unable to determine Object Type for {video}")
             return None
@@ -56,14 +64,7 @@ class APIObject(Video):
         self.seasons = []
         self.librarySectionID = video.librarySectionID
         self.downloadURL = self._getDownloadURL(video)
-        #plex api doesn't support poster directly, just the banner, but it's a plex structured url, so swap it.
-        if video.banner is None:
-           self.log.debug(f"no banner: Falling back to {video.artUrl}")
-           self.image= video.artUrl
-        else:
-           self.log.debug(f"Switching banner to poster {video.banner}")
-           self.image =  video.url(video.banner).replace("banner", "poster")
-
+      
     def isMovie(self):
         return self.type == APIObjectType.Movie
 
