@@ -2,7 +2,7 @@ import configparser
 import enum
 import json
 import requests
-
+import logging
 
 from plexsync.addoptions import *
 from plexsync.base import *
@@ -18,6 +18,7 @@ settings = base.getSettings()
 
 class ThirdParty():
     def __init__(self, service):
+        self.log = logging.getLogger('plexsync')
         self.service = service
         self.qualityProfiles = None #Set quality profiles so the real getter can cache them
         self.addOptions = AddOptions(self.service)
@@ -38,7 +39,7 @@ class ThirdParty():
                 self.endpoints["lookup"] = "series/lookup"
                 self.endpoints["add"] = "series"
             elif self.service == ThirdPartyService.Movie:
-                self.endpoints["lookup"] = "movies/lookup"
+                self.endpoints["lookup"] = "movie/lookup"
                 self.endpoints["add"] = "movie"
             else:
                 print(f"Unable to set endpoints for {self.service}")
@@ -136,5 +137,6 @@ class ThirdParty():
         return self.qualityProfiles
     def _getRootfolder(self):
         response = requests.get(url = self._buildURL(self.endpoints["rootfolder"]), headers = self.headers)
-        [item] = response.json()
-        return item["path"]
+        item = response.json()
+        self.log.info(item)
+        #return item["path"]
