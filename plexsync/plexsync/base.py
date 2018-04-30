@@ -7,10 +7,6 @@ from pathlib import Path
 
 CONFIG_PATH = str(os.path.join('/config', 'config.ini'))
 
-class APIObjectType(enum.Enum):
-    Show = 1
-    Movie = 2
-
 def dump(obj):
     for attr in dir(obj):
         if hasattr(obj, attr):

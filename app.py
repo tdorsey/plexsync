@@ -29,7 +29,7 @@ def login():
     plexsync = PlexSync()
     try:
         plexAccount = plexsync.getAccount(session['username'], session['password'])
-        return redirect('https://plexsync.rtd3.me/home', code=303)
+        return redirect('/home', code=303)
     except Exception as e:
         return json.dumps(str(e))
 
@@ -42,7 +42,7 @@ def home():
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
    except KeyError:
-        return redirect('https://plexsync.rtd3.me')
+        return redirect('/')
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
 def sections(serverName):
@@ -158,18 +158,22 @@ def compare(yourServerName, theirServerName, sectionName=None):
         print(f"{len(results)} your diff")
         result_list = []
         for r in results:
+                app.logger.debug("in compare")
+
+                app.logger.debug(r)
                 m = plexsync.getAPIObject(r)
+                app.logger.debug(m)
+
                 result_dict = {}
                 result_dict['title'] = m.title
                 result_dict['downloadURL'] = m.downloadURL
-                print(m.overview)
                 result_dict['overview'] = m.overview
                 result_dict['sectionID'] = m.librarySectionID
                 result_dict['year'] = m.year
                 result_dict['guid'] = urllib.parse.quote_plus(m.guid)
                 result_dict['server'] = theirServer.friendlyName
-                if len(m.images) > 0:
-                    result_dict['image'] = m.images[0]['url'].replace("http", "https")
+                if m.image and len(m.image) > 0:
+                    result_dict['image'] = m.image
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)
         return render_template('media.html', media=result_list)
