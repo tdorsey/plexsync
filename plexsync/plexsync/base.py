@@ -1,7 +1,10 @@
+
 import configparser
 import enum
+import logging
 import os
 import sys
+
 
 from pathlib import Path
 
@@ -13,17 +16,24 @@ def dump(obj):
             print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
 class Base:
+    def __init__(self):
+        self.log = logging.getLogger("plexsync")
+        self.settings = self.getSettings() 
+
     def getSettings(self):
-        settings = configparser.ConfigParser()
-        print(f"Reading configuration from {CONFIG_PATH} ")
-        settings.read(CONFIG_PATH)
-        return settings
+          config = configparser.SafeConfigParser()
+          self.log.info(f"Reading configuration from {CONFIG_PATH}")
+          config.read(CONFIG_PATH)  
+          return config
 
-    def writeSettings(settings):
+    def writeSettings(self,settings):
         with open(CONFIG_PATH, 'w') as config_file:
-            settings.write(config_file)
+            self.settings.write(config_file)
 
-
+    def create_dir(self, directory):
+        if not os.path.exists(directory):
+          self.log.info(f"Creating {directory}")
+          os.makedirs(directory) 
 
 #Create a module level instance of settings
 

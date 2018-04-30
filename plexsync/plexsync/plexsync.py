@@ -14,24 +14,19 @@ from plexsync.base import Base
 from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
-class PlexSync:
+class PlexSync(Base):
     
     def __init__(self):
-        self.log = logging.getLogger('plexsync')
+        super().__init__()
         self.show_provider = ThirdParty(ThirdPartyService.Show)
         self.movie_provider = ThirdParty(ThirdPartyService.Movie)
 
         self.account = None
         self.servers = None
-        base = Base()
-        self.settings = base.getSettings()
 
     def printHeaderLine():
         print('*******************')
     
-    def getSettings(self):
-        return self.settings
-
     def getServers(self, account=None):
         if not account:
             account = self.account
@@ -126,7 +121,7 @@ class PlexSync:
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()
         theirSet = set()
-     
+
         for r in yourResults:
             yourSet.add(APIObject(r))
 
@@ -134,23 +129,31 @@ class PlexSync:
             theirSet.add(APIObject(r))
 
         return theirSet - yourSet
-    
+
     def getAPIObject(self, r):
         m = APIObject(r)
         m.fetchMissingData()
         return m
-        
+
     def transfer(self, media):
 
         self.log.debug('transfer')
         try:
             if media.type == "show":
-               self.log.debug(f"Getting episodes") 
-               savepath = self.settings.get('download', 'tv_folder')
-               for episode in media.episodes():
-                 self.log.info(f"Downloading {episode.title}")
-                 tmp = episode.download(savepath)
-                 os.rename(tmp, f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media.container}")
+               self.log.debug(f"Getting episodes")
+               tv_root = self.settings.get('download', 'tv_folder')
+               show_folder_path = os.path.join(tv_root, f"{media.title}")
+               self.create_dir(show_folder_path)
+               for season in media.seasons():
+                  season_folder_path = os.path.join(show_folder_path, f"Season {season.seasonNumber}")
+                  self.create_dir(season_folder_path)
+                  self.log.info(f"Starting Season {season.seasonNumber} - {len(season.episodes())} Episodes")
+                  for episode in season:
+                    self.log.info(f"Starting {episode.title}")
+                    tmp = episode.download(season_folder_path)
+                    episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
+                    dest = os.path.join(season_folder_path, episode_path)
+                    os.rename(tmp[0], dest)
             if media.type == APIObjectType.Movie:
                for part in media.iterParts():
                  #We do this manually since we dont want to add a progress to Episode etc

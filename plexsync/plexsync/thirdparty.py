@@ -12,27 +12,23 @@ from plexsync.thirdpartyservice import *
 
 from pick import pick
 
-base = Base()
-
-settings = base.getSettings()
-
-class ThirdParty():
+class ThirdParty(Base):
     def __init__(self, service):
-        self.log = logging.getLogger('plexsync')
+        super().__init__()
         self.service = service
         self.qualityProfiles = None #Set quality profiles so the real getter can cache them
         self.addOptions = AddOptions(self.service)
         try:
-            self.host = settings.get(service.value, 'host')
+            self.host = self.settings.get(service.value, 'host')
             self.apiRoot = "api"
             self.endpointBase = f"{self.host}/{self.apiRoot}/"
             self.endpoints = {"lookup": None, "profile" : "profile", "rootfolder" : "rootfolder" }
-            self.apiKey = settings.get(service.value, 'api-key')
+            self.apiKey = self.settings.get(service.value, 'api-key')
             self.headers = {'X-Api-Key': self.apiKey}
             self.rootFolder = self._getRootfolder()
 
             try:
-                self.qualityProfile = settings.get(service.value, 'quality_profile')
+                self.qualityProfile = self.settings.get(service.value, 'quality_profile')
             except configparser.NoOptionError:
                 self.qualityProfile = self.setQualityProfileSetting()
             if self.service == ThirdPartyService.Show:
