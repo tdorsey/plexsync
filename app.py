@@ -119,7 +119,9 @@ def transfer():
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
         if authorized:
-            plexsync.transfer(result)
+            task = plexsync.transfer(result).delay(4,4)
+            app.logger.debug(f"Task state: {task.ready()}"
+            app.logger.debug(f"Task result: {task.get()}"
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:

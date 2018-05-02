@@ -7,6 +7,10 @@ import urllib
 import logging
 import os
 
+
+from celery import Celery
+
+
 from plexapi.myplex import MyPlexAccount
 from plexapi import utils
 
@@ -18,6 +22,9 @@ class PlexSync(Base):
     
     def __init__(self):
         super().__init__()
+
+        self.tasks = Celery('tasks', broker='pyamqp://guest@localhost',backend='redis://localhost')
+  
         self.show_provider = ThirdParty(ThirdPartyService.Show)
         self.movie_provider = ThirdParty(ThirdPartyService.Movie)
 
@@ -135,6 +142,7 @@ class PlexSync(Base):
         m.fetchMissingData()
         return m
 
+    @tasks.task
     def transfer(self, media):
 
         self.log.debug('transfer')
