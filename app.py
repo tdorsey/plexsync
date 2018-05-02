@@ -1,5 +1,5 @@
-
 #!/usr/bin/python3
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
 
@@ -9,6 +9,9 @@ import logging
 import sys
 
 app = Flask(__name__)
+
+app = Flask(__name__)
+
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
 
@@ -120,8 +123,8 @@ def transfer():
             result = section.search(guid=guid).pop()
         if authorized:
             task = plexsync.transfer(result).delay(4,4)
-            app.logger.debug(f"Task state: {task.ready()}"
-            app.logger.debug(f"Task result: {task.get()}"
+            app.logger.debug(f"Task state: {task.ready()}")
+            app.logger.debug(f"Task result: {task.get()}")
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:
