@@ -7,8 +7,7 @@ import urllib
 import logging
 import os
 
-from celery import Celery
-from .celery import app
+from .celery import celery
 
 from plexapi.myplex import MyPlexAccount
 from plexapi import utils
@@ -17,15 +16,13 @@ from plexsync.base import Base
 from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
-#celery = Celery('plexsync', broker=self.settings['CELERY_BROKER_URL'], backend=self.settings['CELERY_RESULT_BACKEND'])
-
 
 class PlexSync(Base):
 
     def __init__(self):
         super().__init__()
-        self.log.debug(f"{self.__name__} self name")
-        celery.conf.update(self.settings.get('celery'))
+#        self.log.debug(f"{self.__name__} self name")
+#        celery.conf.update(self.settings.get('celery'))
 
         self.show_provider = ThirdParty(ThirdPartyService.Show)
         self.movie_provider = ThirdParty(ThirdPartyService.Movie)
@@ -35,11 +32,6 @@ class PlexSync(Base):
 
     def printHeaderLine():
         print('*******************')
-
-
-    def getCelery(self):
-        self.log.debug("Getting celery")
-        return self.celery    
     def getServers(self, account=None):
         if not account:
             account = self.account
@@ -51,11 +43,11 @@ class PlexSync(Base):
         if not self.servers:
             self.servers = self.getServers()
         ownResources  = filter(lambda x: x.owned == True, self.servers)
-        self.log.debug("ownResources {ownResources}")
+        self.log.debug(f"ownResources {ownResources}")
         ownServers = []
         for resource in ownResources:
             ownServers.append(resource.connect())
-        self.log.debug("ownServers {ownServers}")
+        self.log.debug(f"ownServers {ownServers}")
         return ownServers
 
     def getServer(self, serverName):
@@ -148,10 +140,73 @@ class PlexSync(Base):
         m.fetchMissingData()
         return m
 
-    @app.task
-    def transfer(self, media):
+    @celery.task
+    def transfer2(server, guid):
+
+        
+        plexsync = PlexSync()   
+        
+        username = plexsync.settings.get("auth","myplex_username")
+        password = plexsync.settings.get("auth","myplex_password")
+         
+
+        account = plexsync.getAccount(username,password)
+        plexsync.log.debug(f"{account}")
+        server = plexsync.getServer(server)
+        plexsync.log.debug(f"{server}")
+        plexsync.log.warn(f"{guid}")
+        results = server.search(guid)
+        if len(results) > 1:
+          media = results.pop()
+        else:
+          return json.dumps(f"{guid} not found on {server}")
+        plexsync.log.debug(f"{media}")
+        try:
+            if media.type == "show":
+               plexsync.log.debug(f"Getting episodes")
+               tv_root = settings.get('download', 'tv_folder')
+               show_folder_path = os.path.join(tv_root, f"{media.title}")
+               plexsync.create_dir(show_folder_path)
+               for season in media.seasons():
+                  season_folder_path = os.path.join(show_folder_path, f"Season {season.seasonNumber}")
+                  plexsync.create_dir(season_folder_path)
+                  plexsync.log.info(f"Starting Season {season.seasonNumber} - {len(season.episodes())} Episodes")
+                  for episode in season:
+                    plexsync.log.info(f"Starting {episode.title}")
+                    tmp = episode.download(season_folder_path)
+                    episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
+                    dest = os.path.join(season_folder_path, episode_path)
+                    os.rename(tmp[0], dest)
+            if media.type == APIObjectType.Movie:
+               for part in media.iterParts():
+                 #We do this manually since we dont want to add a progress to Episode etc
+                  renamed_file = f"{media.title} [{media.year}].{part.container}"
+                  savepath = plexsync.settings.get('download', 'movie_folder')
+                  plexsync.log.debug(f"savepath: {savepath}")
+                  plexsync.log.debug(f"media: {media}")
+                  plexsync.log.debug(f"server: {media._server}")
+                  plexsync.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
+                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
+                  plexsync.log.debug(f"url: {url}")
+                  renamed_file = f"{media.title} [{media.year}].{part.container}"
+                  plexsync.log.debug(renamed_file)
+                  filepath = utils.download(url=url,
+                                            filename=renamed_file,
+                                            savepath=savepath,
+                                            session=media._server._session,
+                                            token=media._server._token)
+                  plexsync.log.debug(f"{filepath}")
+                  plexsync.log.debug(f"downloaded {renamed_file}")
+        except Exception as e:
+            plexsync.log.debug(e)
+
+    
+    @celery.task
+    def transfer(media):
 
         self.log.debug('transfer')
+        self.log.error('floobat')
+
         try:
             if media.type == "show":
                self.log.debug(f"Getting episodes")

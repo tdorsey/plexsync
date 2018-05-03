@@ -121,10 +121,20 @@ def transfer():
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
+            key = result.ratingKey 
         if authorized:
-            task = plexsync.transfer(result).delay(4,4)
-            app.logger.debug(f"Task state: {task.ready()}")
-            app.logger.debug(f"Task result: {task.get()}")
+            app.logger.debug("building task") 
+            try:
+              path = "p"
+              filename = "f"
+              task = plexsync.transfer2.delay(theirServer.friendlyName, key)
+              #task2 = plexsync.transfer(result).delay()
+              app.logger.debug(str(task)) 
+              state = task.ready()  
+              app.logger.debug(f"Task state: {state}")
+              app.logger.debug(f"Task result: {task.get()}")
+            except Exception as e :
+              return json.dumps(repr(e))
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:
