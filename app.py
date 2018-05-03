@@ -40,7 +40,7 @@ def login():
 def home():
    try:
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
         servers = plexsync.getServers(plexAccount)
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
@@ -127,7 +127,7 @@ def transfer():
             try:
               path = "p"
               filename = "f"
-              task = plexsync.transfer2.delay(theirServer.friendlyName, key)
+              task = plexsync.transfer2.delay(theirServer.friendlyName, section.title, guid)
               #task2 = plexsync.transfer(result).delay()
               app.logger.debug(str(task)) 
               state = task.ready()  

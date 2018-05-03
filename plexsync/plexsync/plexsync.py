@@ -6,6 +6,7 @@ import requests
 import urllib
 import logging
 import os
+import json
 
 from .celery import celery
 
@@ -18,23 +19,25 @@ from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 
 class PlexSync(Base):
+    account = None
 
     def __init__(self):
         super().__init__()
-#        self.log.debug(f"{self.__name__} self name")
-#        celery.conf.update(self.settings.get('celery'))
 
         self.show_provider = ThirdParty(ThirdPartyService.Show)
         self.movie_provider = ThirdParty(ThirdPartyService.Movie)
-
-        self.account = None
+        
+        self.account = self.getAccount()
+        self.log.info(f"Account Init: {self.account}")
         self.servers = None
 
     def printHeaderLine():
         print('*******************')
+
     def getServers(self, account=None):
-        if not account:
-            account = self.account
+        self.log.info(account)
+        if account is None:
+          account = self.getAccount()
         resources = account.resources()
         self.servers = filter(lambda x: x.provides == 'server', resources)
         return self.servers
@@ -53,11 +56,15 @@ class PlexSync(Base):
     def getServer(self, serverName):
         return self.account.resource(serverName).connect()
 
-    def getAccount(self,username, password):
-        if not self.account:
-            self.account = MyPlexAccount(username, password)
-        return self.account
+    def getAccount(self, username=None, password=None):
+        self.log.info("Getting Account")
+        username = username or self.settings.get("auth", "myplex_username")
+        password = password or self.settings.get("auth", "myplex_password")
 
+        if self.account is None:
+            return MyPlexAccount(username, password)
+        else:
+            return self.account
     def getSections(self, server):
         return server.library.sections()
 
@@ -141,26 +148,25 @@ class PlexSync(Base):
         return m
 
     @celery.task
-    def transfer2(server, guid):
-
-        
+    def transfer2(server, sectionTitle, guid):
         plexsync = PlexSync()   
         
-        username = plexsync.settings.get("auth","myplex_username")
-        password = plexsync.settings.get("auth","myplex_password")
-         
 
-        account = plexsync.getAccount(username,password)
-        plexsync.log.debug(f"{account}")
+        guid = urllib.parse.unquote(guid)
+
+        plexsync.log.warn(f"section title: {sectionTitle}")
+        plexsync.log.warn(f"GUID:{guid}")
+        
         server = plexsync.getServer(server)
+        section = server.library.section(sectionTitle)
         plexsync.log.debug(f"{server}")
         plexsync.log.warn(f"{guid}")
-        results = server.search(guid)
-        if len(results) > 1:
-          media = results.pop()
-        else:
-          return json.dumps(f"{guid} not found on {server}")
-        plexsync.log.debug(f"{media}")
+        plexsync.log.warn(f"{section}")
+        results = section.search(guid=guid)
+        media = results.pop()
+        if media is None:           
+             return json.dumps(f"{guid} not found on {server} - {section}")
+        plexsync.log.warn(f"{media}")
         try:
             if media.type == "show":
                plexsync.log.debug(f"Getting episodes")
