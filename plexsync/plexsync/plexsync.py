@@ -147,30 +147,27 @@ class PlexSync(Base):
         m.fetchMissingData()
         return m
 
-    @celery.task
-    def transfer2(server, sectionTitle, guid):
-        plexsync = PlexSync()   
-        
-
+    @celery.task(throw=True)
+    def transfer2(server, guid):
+        plexsync = PlexSync()
         guid = urllib.parse.unquote(guid)
 
-        plexsync.log.warn(f"section title: {sectionTitle}")
-        plexsync.log.warn(f"GUID:{guid}")
-        
+        plexsync.log.debug(f"GUID:{guid}")
         server = plexsync.getServer(server)
-        section = server.library.section(sectionTitle)
-        plexsync.log.debug(f"{server}")
-        plexsync.log.warn(f"{guid}")
-        plexsync.log.warn(f"{section}")
-        results = section.search(guid=guid)
-        media = results.pop()
-        if media is None:           
-             return json.dumps(f"{guid} not found on {server} - {section}")
-        plexsync.log.warn(f"{media}")
-        try:
+        for section in server.library.sections():
+            plexsync.log.warn(f"section title: {section.title}")
+            plexsync.log.debug(f"{server}")
+            plexsync.log.warn(f"{guid}")
+            plexsync.log.warn(f"{section}")
+            results = section.search(guid=guid)
+            media = next(iter(results), None)
+            if media is None:
+              plexsync.log.info(f"{guid} not found in {server.friendlyName} - {section.title}")
+              continue
+            plexsync.log.debug(f"{media}")
             if media.type == "show":
                plexsync.log.debug(f"Getting episodes")
-               tv_root = settings.get('download', 'tv_folder')
+               tv_root = plexsync.settings.get('download', 'tv_folder')
                show_folder_path = os.path.join(tv_root, f"{media.title}")
                plexsync.create_dir(show_folder_path)
                for season in media.seasons():
@@ -185,7 +182,6 @@ class PlexSync(Base):
                     os.rename(tmp[0], dest)
             if media.type == APIObjectType.Movie:
                for part in media.iterParts():
-                 #We do this manually since we dont want to add a progress to Episode etc
                   renamed_file = f"{media.title} [{media.year}].{part.container}"
                   savepath = plexsync.settings.get('download', 'movie_folder')
                   plexsync.log.debug(f"savepath: {savepath}")
@@ -203,15 +199,11 @@ class PlexSync(Base):
                                             token=media._server._token)
                   plexsync.log.debug(f"{filepath}")
                   plexsync.log.debug(f"downloaded {renamed_file}")
-        except Exception as e:
-            plexsync.log.debug(e)
 
-    
     @celery.task
     def transfer(media):
 
         self.log.debug('transfer')
-        self.log.error('floobat')
 
         try:
             if media.type == "show":

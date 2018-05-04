@@ -3,7 +3,7 @@ from celery import Celery
 
 celery = Celery('plexsync',
              broker='pyamqp://guest@localhost//',
-             result_backend='redis://localhost:6379/0',
+             backend='redis://localhost:6379/0',
              include=['plexsync.plexsync'])
 
 # Optional configuration, see the application user guide.

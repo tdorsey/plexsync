@@ -16,6 +16,7 @@ pick==0.6.4
 PlexAPI==3.0.6
 pyparsing==2.2.0
 pytz==2018.4
+redis==2.10.6
 requests==2.18.3
 six==1.10.0
 tqdm==4.15.0

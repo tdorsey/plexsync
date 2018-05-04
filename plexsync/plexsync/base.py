@@ -1,6 +1,7 @@
 
 import configparser
 import enum
+import json
 import logging
 import os
 import sys
@@ -32,13 +33,9 @@ class Base:
 
     def create_dir(self, directory):
         if not os.path.exists(directory):
-          self.log.info(f"Creating {directory}")
-          os.makedirs(directory) 
-
-#Create a module level instance of settings
-
-base = Base()
-
-this = sys.modules[__name__]
-this.settings = None
-this.settings = base.getSettings()
+           try:
+             self.log.info(f"Creating {directory}")
+             os.makedirs(directory) 
+           except Exception as e:
+            self.log.error(json.dumps(repr(e)))
+            raise

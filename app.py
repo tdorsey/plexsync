@@ -125,16 +125,11 @@ def transfer():
         if authorized:
             app.logger.debug("building task") 
             try:
-              path = "p"
-              filename = "f"
-              task = plexsync.transfer2.delay(theirServer.friendlyName, section.title, guid)
-              #task2 = plexsync.transfer(result).delay()
-              app.logger.debug(str(task)) 
-              state = task.ready()  
-              app.logger.debug(f"Task state: {state}")
-              app.logger.debug(f"Task result: {task.get()}")
-            except Exception as e :
-              return json.dumps(repr(e))
+              task = plexsync.transfer2.delay(theirServer.friendlyName, guid)
+              task.get(propagate=True)
+            except Exception as e:
+              return json.dumps(str(e))
+
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:
