@@ -150,21 +150,21 @@ class PlexSync(Base):
     @celery.task(throw=True)
     def transfer2(server, guid):
         plexsync = PlexSync()
+        plexsync.log.info(f"server - {server}")
         guid = urllib.parse.unquote(guid)
 
-        plexsync.log.debug(f"GUID:{guid}")
+        plexsync.log.info(f"GUID:{guid}")
         server = plexsync.getServer(server)
         for section in server.library.sections():
-            plexsync.log.warn(f"section title: {section.title}")
-            plexsync.log.debug(f"{server}")
-            plexsync.log.warn(f"{guid}")
-            plexsync.log.warn(f"{section}")
+            plexsync.log.info(f"section title: {section.title}")
+            plexsync.log.info(f"{guid}")
+            plexsync.log.info(f"{section}")
             results = section.search(guid=guid)
             media = next(iter(results), None)
             if media is None:
               plexsync.log.info(f"{guid} not found in {server.friendlyName} - {section.title}")
               continue
-            plexsync.log.debug(f"{media}")
+            plexsync.log.info(f"media type - {media.type}")
             if media.type == "show":
                plexsync.log.debug(f"Getting episodes")
                tv_root = plexsync.settings.get('download', 'tv_folder')
@@ -175,31 +175,21 @@ class PlexSync(Base):
                   plexsync.create_dir(season_folder_path)
                   plexsync.log.info(f"Starting Season {season.seasonNumber} - {len(season.episodes())} Episodes")
                   for episode in season:
-                    plexsync.log.info(f"Starting {episode.title}")
-                    tmp = episode.download(season_folder_path)
-                    episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
-                    dest = os.path.join(season_folder_path, episode_path)
-                    os.rename(tmp[0], dest)
-            if media.type == APIObjectType.Movie:
-               for part in media.iterParts():
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  savepath = plexsync.settings.get('download', 'movie_folder')
-                  plexsync.log.debug(f"savepath: {savepath}")
-                  plexsync.log.debug(f"media: {media}")
-                  plexsync.log.debug(f"server: {media._server}")
-                  plexsync.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
-                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
-                  plexsync.log.debug(f"url: {url}")
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  plexsync.log.debug(renamed_file)
-                  filepath = utils.download(url=url,
-                                            filename=renamed_file,
-                                            savepath=savepath,
-                                            session=media._server._session,
-                                            token=media._server._token)
-                  plexsync.log.debug(f"{filepath}")
-                  plexsync.log.debug(f"downloaded {renamed_file}")
-
+                      plexsync.log.info(f"Starting {episode.title}")
+                      tmp = episode.download(season_folder_path)
+                      episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
+                      dest = os.path.join(season_folder_path, episode_path)
+                      os.rename(tmp[0], dest)
+            if media.type == "movie":
+               plexsync.log.info(f"Downloading Movie")
+               savepath = plexsync.settings.get('download', 'movies_folder')
+               plexsync.log.info(f" container - {media.media[0].container}")
+               file = media.media[0].parts[0].file
+               extension = file.split(".")[1]
+               dest = f"{media.title} [{media.year}].{extension}"
+               tmp = media.download(savepath)
+               os.rename(tmp[0], dest)
+               plexsync.log.debug(f"downloaded {dest}")
     @celery.task
     def transfer(media):
 

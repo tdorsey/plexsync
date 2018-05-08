@@ -4,6 +4,7 @@ import enum
 import json
 import logging
 import os
+import pwd
 import sys
 
 
@@ -32,10 +33,14 @@ class Base:
             self.settings.write(config_file)
 
     def create_dir(self, directory):
-        if not os.path.exists(directory):
+        user_info = pwd.getpwuid(os.getuid())
+        self.log.warn(f" I am {user_info.pw_uid} - {user_info.pw_name}")
+        self.log.warn(f"Creating {directory}")
+        p =  Path(directory)
+        self.log.warn(f"not p exists {not p.exists()}")
+        if not p.exists():
            try:
-             self.log.info(f"Creating {directory}")
-             os.makedirs(directory) 
+             p.mkdir(parents=True) 
            except Exception as e:
             self.log.error(json.dumps(repr(e)))
             raise
