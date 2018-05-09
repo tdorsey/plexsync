@@ -181,15 +181,21 @@ class PlexSync(Base):
                       dest = os.path.join(season_folder_path, episode_path)
                       os.rename(tmp[0], dest)
             if media.type == "movie":
-               plexsync.log.info(f"Downloading Movie")
-               savepath = plexsync.settings.get('download', 'movies_folder')
-               plexsync.log.info(f" container - {media.media[0].container}")
-               file = media.media[0].parts[0].file
-               extension = file.split(".")[1]
-               dest = f"{media.title} [{media.year}].{extension}"
-               tmp = media.download(savepath)
-               os.rename(tmp[0], dest)
-               plexsync.log.debug(f"downloaded {dest}")
+                for part in media.iterParts():
+                # We do this manually since we dont want to add a progress to Episode etc
+                 renamed_file = f"{media.title} [{media.year}].{part.container}"
+                 savepath = plexsync.settings.get('download', 'movies_folder')
+                 plexsync.log.debug(f"savepath: {savepath}")
+                 plexsync.log.debug(f"media: {media}")
+                 plexsync.log.debug(f"server: {media._server}")
+                 plexsync.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
+                 url = media._server.url(f"{part.key}?download=1", includeToken=True)
+                 plexsync.log.debug(f"url: {url}")
+                 renamed_file = f"{media.title} [{media.year}].{part.container}"
+                 plexsync.log.debug(renamed_file) 
+                 filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
+                 plexsync.log.debug(f"{filepath}")
+                 plexsync.log.debug(f"old - downloaded {renamed_file}")  
     @celery.task
     def transfer(media):
 
