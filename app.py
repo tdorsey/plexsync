@@ -1,5 +1,5 @@
-
 #!/usr/bin/python3
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
 
@@ -9,6 +9,9 @@ import logging
 import sys
 
 app = Flask(__name__)
+
+app = Flask(__name__)
+
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
 
@@ -29,7 +32,7 @@ def login():
     plexsync = PlexSync()
     try:
         plexAccount = plexsync.getAccount(session['username'], session['password'])
-        return redirect('https://plexsync.rtd3.me/home', code=303)
+        return redirect('/home', code=303)
     except Exception as e:
         return json.dumps(str(e))
 
@@ -37,12 +40,12 @@ def login():
 def home():
    try:
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
         servers = plexsync.getServers(plexAccount)
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
    except KeyError:
-        return redirect('https://plexsync.rtd3.me')
+        return redirect('/')
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
 def sections(serverName):
@@ -118,8 +121,15 @@ def transfer():
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
-        if authorized: 
-            plexsync.transfer(result)
+            key = result.ratingKey 
+        if authorized:
+            app.logger.debug("building task") 
+            try:
+              task = plexsync.transfer2.delay(theirServer.friendlyName, guid)
+              task.get(propagate=True)
+            except Exception as e:
+              return json.dumps(str(e))
+
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:
@@ -129,54 +139,56 @@ def transfer():
     except Exception as e:
         return json.dumps(str(e))
 
-
-
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
-    
-    plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
-    sectionsToCompare = []
+    try:
+        plexsync = PlexSync()
+        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        sectionsToCompare = []
 
-    if not sectionName:    
-        settings = plexsync.getSettings()
-        sectionsToCompare = settings.get('sections', 'sections').split(",")
-    else:
-        sectionsToCompare.append(sectionName)
+        if not sectionName:
+            settings = plexsync.getSettings()
+            sectionsToCompare = settings.get('sections', 'sections').split(",")
+        else:
+            sectionsToCompare.append(sectionName)
 
-    yourServer = plexsync.getServer(yourServerName)
-    session['yourServer'] = yourServerName
-    theirServer = plexsync.getServer(theirServerName)
-    
-    for section in sectionsToCompare:
-        yourLibrary = plexsync.getResults(yourServer, section)
-        theirLibrary = plexsync.getResults(theirServer, section)
-        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
+        yourServer = plexsync.getServer(yourServerName)
+        session['yourServer'] = yourServerName
+        theirServer = plexsync.getServer(theirServerName)
 
-        print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
-        print(f"{len(results)} your diff")
-        result_list = []
-        for r in results:
+        for section in sectionsToCompare:
+            yourLibrary = plexsync.getResults(yourServer, section)
+            theirLibrary = plexsync.getResults(theirServer, section)
+            results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
+
+            app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
+            app.logger.debug(f"{len(results)} your diff")
+            result_list = []
+
+            for r in results:
+
                 m = plexsync.getAPIObject(r)
+
                 result_dict = {}
                 result_dict['title'] = m.title
                 result_dict['downloadURL'] = m.downloadURL
-                print(m.overview)
                 result_dict['overview'] = m.overview
                 result_dict['sectionID'] = m.librarySectionID
                 result_dict['year'] = m.year
                 result_dict['guid'] = urllib.parse.quote_plus(m.guid)
                 result_dict['server'] = theirServer.friendlyName
-                if len(m.images) > 0:
-                    result_dict['image'] = m.images[0]['url'].replace("http", "https")
+                if m.image and len(m.image) > 0:
+                    result_dict['image'] = m.image
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)
-        return render_template('media.html', media=result_list)
+    except Exception as e:
+          return json.dumps(str(e))
+    return render_template('media.html', media=result_list)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
-    
+
     plexsync = PlexSync()
     plexAccount = plexsync.getAccount(session['username'], session['password'])
     sectionsToCompare = []
