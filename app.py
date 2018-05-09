@@ -1,5 +1,5 @@
-
 #!/usr/bin/python3
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from plexsync.plexsync import PlexSync
 
@@ -9,6 +9,9 @@ import logging
 import sys
 
 app = Flask(__name__)
+
+app = Flask(__name__)
+
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
 
@@ -37,7 +40,7 @@ def login():
 def home():
    try:
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
         servers = plexsync.getServers(plexAccount)
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
@@ -118,8 +121,15 @@ def transfer():
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
+            key = result.ratingKey 
         if authorized:
-            plexsync.transfer(result)
+            app.logger.debug("building task") 
+            try:
+              task = plexsync.transfer2.delay(theirServer.friendlyName, guid)
+              task.get(propagate=True)
+            except Exception as e:
+              return json.dumps(str(e))
+
             msg = f"Transferring {result.title} to {currentUserServer}"
             return json.dumps(msg)
         else:
