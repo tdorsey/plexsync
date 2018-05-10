@@ -26,23 +26,25 @@ VOLUME /config
 VOLUME /logs
 VOLUME /downloads
 
+COPY config/supervisord.conf /config
+COPY config/config.ini /config
+
 WORKDIR /app
 
 RUN apk update && apk add nodejs redis supervisor python3 git
-RUN npm install -g browserify 
-RUN npm install notifyjs
-RUN pip3 install --upgrade pip 
-
 COPY requirements.txt.dev .
 RUN pip3 install -r requirements.txt.dev
 
-COPY config/supervisord.conf /config
-COPY  config/config.ini /config/
+COPY package.json /app
+RUN npm install -g browserify 
+RUN npm install 
+RUN pip3 install --upgrade pip 
 
 COPY /templates ./templates
 COPY /static  ./static
 
-RUN browserify -d ./static/scripts/main.js > ./static/scripts/bundle.js
+RUN browserify -d ./static/scripts/main.js --debug -p [ parcelify -o ./static/css/bundle.css ] > ./static/scripts/bundle.js 
+                  
 RUN chown -R  plexsync:plexsync /app
 
 
