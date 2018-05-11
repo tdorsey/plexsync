@@ -39,16 +39,21 @@ COPY package.json /app
 RUN npm install -g browserify 
 RUN npm install 
 RUN pip3 install --upgrade pip 
+COPY app.py .
+
+COPY /static  ./static
+#TODO: Symlinking should work here but doesn't, figure out why
+RUN cp node_modules/octicons/build/svg/* ./static/images
+
 
 COPY /templates ./templates
-COPY /static  ./static
+
 
 RUN browserify -d ./static/scripts/main.js --debug -p [ parcelify -o ./static/css/bundle.css ] > ./static/scripts/bundle.js 
                   
 RUN chown -R  plexsync:plexsync /app
 
 
-COPY app.py .
 COPY /plexsync/ ./plexsync
 
 RUN pip3 install -e ./plexsync

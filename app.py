@@ -32,7 +32,7 @@ def login():
     plexsync = PlexSync()
     try:
         plexAccount = plexsync.getAccount(session['username'], session['password'])
-        return redirect('/home', code=303)
+        return redirect(url_for('home', _scheme='https', _external=True), code=303)
     except Exception as e:
         return json.dumps(str(e))
 
