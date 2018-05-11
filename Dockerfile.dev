@@ -1,52 +1,65 @@
-FROM rabbitmq:alpine
+FROM python:3-alpine3.7
 
 USER root
-WORKDIR /root
+WORKDIR /app
 
 ENV PUID ${PUID:-1100}
 ENV PGID ${PGID:-1101}
 RUN addgroup -S -g ${PGID} plexsync
 RUN adduser -S -G plexsync -u ${PUID} plexsync
-RUN mkdir /downloads && chown -R plexsync:plexsync /downloads && chmod -R 770 /downloads
-RUN mkdir /logs && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
-RUN mkdir /config && chown -R plexsync:plexsync /config && chmod -R 770 /config
+RUN chown -R plexsync:plexsync /app && chmod -R 770 /app
 
-RUN echo "------------------------------------- \
-GID/UID \
-------------------------------------- \
-User uid:    $(id -u plexsync) \
-User gid:    $(id -g plexsync) \
-------------------------------------- \ " >> /etc/motd
-ENTRYPOINT ["supervisord"]
-CMD ["-c", "/config/supervisord.conf"]
+
+RUN mkdir /downloads # && chown -R plexsync:plexsync /downloads && chmod -R 770 /downloads
+RUN mkdir /logs # && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
+RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 770 /config
+
+ENTRYPOINT ["/entrypoint.sh"]
 # Expose the Flask port
 EXPOSE 5000
 
 VOLUME /config
 VOLUME /logs
 VOLUME /downloads
-
 WORKDIR /app
 
-RUN apk update && apk add nodejs redis supervisor python3 git
+COPY entrypoint.sh /
+COPY config/config.ini /config
+
+RUN apk update && apk add nodejs python3 git
+
 RUN npm install -g browserify 
-RUN npm install notifyjs
+
 RUN pip3 install --upgrade pip 
 
 COPY requirements.txt.dev .
 RUN pip3 install -r requirements.txt.dev
 
-COPY config/supervisord.conf /config
-COPY  config/config.ini /config/
+COPY package.json /app
+
+##RUN chmod g+s .
+#RUN chown -R plexsync:plexsync . && chmod -R 777 .
+
+#USER plexsync
+
+COPY package.json .
+RUN npm install
+
+COPY app.py .
+
+COPY /static  ./static
+#TODO: Symlinking should work here but doesn't, figure out why
+RUN cp node_modules/octicons/build/svg/* ./static/images
+
 
 COPY /templates ./templates
-COPY /static  ./static
 
-RUN browserify -d ./static/scripts/main.js > ./static/scripts/bundle.js
+
+RUN browserify -d ./static/scripts/main.js --debug -p [ parcelify -o ./static/css/bundle.css ] > ./static/scripts/bundle.js 
+                  
 RUN chown -R  plexsync:plexsync /app
 
 
-COPY app.py .
 COPY /plexsync/ ./plexsync
 
 RUN pip3 install -e ./plexsync
