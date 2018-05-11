@@ -1,8 +1,9 @@
-{% extends "layout.html" %}
+    {% extends "layout.html" %}
 {% block content %}
 
 <div class="container-fluid">
-    <div class="jumbotron">
+<div class="row">
+    <div class="row jumbotron">
         <div class="row">
             <div class="col">
                  <h5>Display</h5>
@@ -36,7 +37,7 @@
                 </select>
             </div>
             <div class="col">
-                <select class="section" id="section" />
+                <select class="section" id="section"></select>
             </div>
         </div> <!--row -->
         <div class="row">
@@ -65,9 +66,10 @@
                 </div>
           </div> <!--row -->
     </div> <!-- jumbotron -->
-    <div id="comparison_results" class="row list-group media collapse in">
+</div> <!-- row -->
+    <div id="comparison_results" class="row list-group media">
         <section class="section_title" id="comparison_title"></section>
     </div>
-<div class="messages" /> 
+<div class="row messages" /> 
 {% endblock %}
 

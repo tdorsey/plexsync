@@ -15,6 +15,16 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
 
+
+def as_json():
+''' If content type is application/json, return json, else render the template
+    best = request.accept_mimetypes \
+        .best_match(['application/json', 'text/html'])
+    rtn =  best == 'application/json' and \
+        request.accept_mimetypes[best] > \
+        request.accept_mimetypes['text/html']
+    return rtn
+
 plexsync = None
 
 @app.route('/')
@@ -184,7 +194,11 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_list.append(result_dict)
     except Exception as e:
           return json.dumps(str(e))
-    return render_template('media.html', media=result_list)
+    if as_json():
+        return jsonify(result_list)
+    else:
+        return render_template('media.html', media=result_list)
+    
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
