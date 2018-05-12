@@ -17,7 +17,7 @@ app.config['LOGGER_NAME'] = 'plexsync'
 
 
 def as_json():
-''' If content type is application/json, return json, else render the template
+# If content type is application/json, return json, else render the template
     best = request.accept_mimetypes \
         .best_match(['application/json', 'text/html'])
     rtn =  best == 'application/json' and \
