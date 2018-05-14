@@ -79,10 +79,7 @@ var $ = require('jquery');
 
 }
 function transfer(item) {
-
-console.log(item);
 guid = encodeURIComponent(item.guid);
-
 var transferEndpoint = "/transfer";
 var trimmed = {
 
@@ -97,7 +94,7 @@ $.ajax({
   url: transferEndpoint,
   data: trimmed,
   complete: function(jqXHR, textStatus)  {
-    var transferNotification = new Notify('Transfer Status', {
+    var transferNotification = new notify('Transfer Status', {
         body: jqXHR.responseText,
         notifyShow: function() { console.log(textStatus); }
           });
@@ -160,8 +157,6 @@ $.ajax({
     }
 
     $( document ).ready(function() {
-          global.compareLibraries = compareLibraries;
-          global.transfer = transfer;
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
@@ -178,3 +173,6 @@ $.ajax({
 
       });
 
+exports.transfer = transfer
+exports.compareLibraries = compareLibraries
+exports.resizeMediaDivs = resizeMediaDivs

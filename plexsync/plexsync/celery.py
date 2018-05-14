@@ -2,8 +2,8 @@ from __future__ import absolute_import, unicode_literals
 from celery import Celery
 
 celery = Celery('plexsync',
-             broker='pyamqp://guest@localhost//',
-             backend='redis://localhost:6379/0',
+             broker='pyamqp://rabbitmq:rabbitmq@rabbitmq//',
+             backend='redis://redis:6379/0',
              include=['plexsync.plexsync'])
 
 # Optional configuration, see the application user guide.

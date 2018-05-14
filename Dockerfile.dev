@@ -12,9 +12,9 @@ RUN chown -R plexsync:plexsync /app && chmod -R 770 /app
 
 RUN mkdir /downloads # && chown -R plexsync:plexsync /downloads && chmod -R 770 /downloads
 RUN mkdir /logs # && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
-RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 770 /config
+RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 777 /config
 
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/entrypoint.sh"]
 # Expose the Flask port
 EXPOSE 5000
 
@@ -38,7 +38,6 @@ RUN pip3 install -r requirements.txt.dev
 COPY package.json /app
 
 ##RUN chmod g+s .
-#RUN chown -R plexsync:plexsync . && chmod -R 777 .
 
 #USER plexsync
 
@@ -50,6 +49,7 @@ COPY app.py .
 COPY /static  ./static
 #TODO: Symlinking should work here but doesn't, figure out why
 RUN cp node_modules/octicons/build/svg/* ./static/images
+RUN chown -R plexsync:plexsync /downloads && chmod -R 777 /downloads
 
 
 COPY /templates ./templates

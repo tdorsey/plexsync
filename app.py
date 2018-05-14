@@ -131,17 +131,18 @@ def transfer():
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
-            key = result.ratingKey 
+            key = result.ratingKey
         if authorized:
-            app.logger.debug("building task") 
+            app.logger.debug("building task")
             try:
               task = plexsync.transfer2.delay(theirServer.friendlyName, guid)
-              task.get(propagate=True)
+             # result = task.get(propagate=True)
+              app.logger.debug(f"Task State: {task}")
             except Exception as e:
-              return json.dumps(str(e))
-
+              app.logger.error(f"Exception {e}")
+              return json.dumps(e)
             msg = f"Transferring {result.title} to {currentUserServer}"
-            return json.dumps(msg)
+            return msg
         else:
             app.logger.debug(f"not authorized")
             msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
