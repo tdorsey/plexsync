@@ -1,7 +1,7 @@
 
-var $ = require('jquery')
-var bootstrap = require('bootstrap');
-var Notify = require('notifyjs');
+$ = require('jquery')
+bootstrap = require('bootstrap');
+notify = require('notifyjs');
 require('octicons')
 require('list.js')
-require('./plexsync')
+plexsync = require('./plexsync')

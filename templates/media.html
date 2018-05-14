@@ -1,28 +1,18 @@
 {% for m in media %}
-       <div class="result col-xs-12 col-lg-4" id="{{ m.guid }}" data-guid="{{ m.guid }}" data-server="{{ m.server }}" data-sectionID="{{ m.sectionID }}">                                                                
-            <div class="thumbnail">                                                                          
-                <img class="group list-group-image" src="{{ m.image }}" alt="{{ m.title }}" />                                                                                                           
-                <div class="caption">                                                                        
-                    <h4 class="group inner list-group-item-heading"> {{ m.title }} </h4>                                                                   
-                    <p class="group inner list-group-item-text"> {{ m.overview }} </p>
-                <div class="row">                                                                        
-                     <div class="col-xs-12 col-md-3">                                                     
-                            <p class="lead"> ({{ m.year }}) </p>                                                                  
-                        </div>                                                                               
-                        <div class="col-xs-12 col-md-3">                                                     
-                            <p class="lead">  {{ m.rating['value'] }} with {{ m.rating['votes'] }} votes </p>                                                                  
-                        </div>
-		</div> <!-- row -->  
-		<div class="row">                                                                                                                                
-           <div class="col-xs-6 col-md-6">
-               <a class="btn btn-success" href="{{m.downloadURL}}" download>Download</a>
-	       </div>                                                                                                     
-            <div class="col-xs-6 col-md-6">
-			    <button onclick="transfer({{m}})"type="button" class="btn btn-danger pull-right">Transfer</button>
-        	</div>
-                </div> <!--row-->                                                                                   
-             </div> <!-- caption -->                                                                                       
-            </div> <!-- group -->                                                                                          
-        </div> <!-- thumbnail -->
-</div> <!-- item -->                                     
+
+
+<div class="card" id="{{ m.guid }}">
+    <img class="card-img-top" src="{{ m.image }}" alt=" {{ m.title }}">
+    <div class="card-body">
+      <h5 class="card-title"> {{ m.title }} &nbsp; ({{ m.year }})</h5>
+      <p class="card-text"> {{ m.overview }} </p>
+    </div>
+    <div class="card-subtitle">
+        <small class="text-muted">  {{ m.rating['value'] }} with {{ m.rating['votes'] }} votes </small>
+    </div>
+    <div class="card-footer">
+			    <a href="{{ m.downloadURL }}" type="button" class="btn btn-primary float-sm-left">Download</a>
+			    <button onclick="plexsync.transfer({{ m }})" type="button" class="btn btn-secondary float-sm-right">Transfer</button>
+    </div>
+ </div>
 {% endfor %}

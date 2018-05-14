@@ -2,7 +2,6 @@
 {% block content %}
 
 <div class="container-fluid">
-<div class="row">
     <div class="row jumbotron">
         <div class="row">
             <div class="col">
@@ -58,7 +57,7 @@
                             <img src="{{ url_for('static', filename='images/cloud-download.svg') }}" class="octicon"/>
                             Download
                         </a>
-                        <a href="#" onclick="compareLibraries()" id="compare" class="btn btn-light">
+                        <a href="#" onclick="plexsync.compareLibraries()" id="compare" class="btn btn-light">
                             <img src="{{ url_for('static', filename='images/git-compare.svg') }}" class="octicon"/>
                             Compare Libraries
                         </a>
@@ -66,7 +65,6 @@
                 </div>
           </div> <!--row -->
     </div> <!-- jumbotron -->
-</div> <!-- row -->
     <div id="comparison_results" class="row list-group media">
         <section class="section_title" id="comparison_title"></section>
     </div>

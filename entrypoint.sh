@@ -1,3 +1,5 @@
 #!/bin/sh
-python3 /app/app.py
-celery worker --app=plexsync -l error -Ofair
+
+celery worker --detach --workdir=/app --app=plexsync -l info -Ofair --uid plexsync 
+python3 /app/app.py  
+

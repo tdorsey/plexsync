@@ -3,6 +3,7 @@ import configparser
 import enum
 import json
 import logging
+import grp
 import os
 import pwd
 import sys
@@ -33,14 +34,16 @@ class Base:
             self.settings.write(config_file)
 
     def create_dir(self, directory):
-        user_info = pwd.getpwuid(os.getuid())
-        self.log.warn(f" I am {user_info.pw_uid} - {user_info.pw_name}")
-        self.log.warn(f"Creating {directory}")
+        uid = pwd.getpwnam("plexsync").pw_uid
+        self.log.error("got uid {uid}") 
+        gid = grp.getgrgid("plexsync").gr_gid
+        self.log.error("got gid {gid}") 
         p =  Path(directory)
-        self.log.warn(f"not p exists {not p.exists()}")
         if not p.exists():
            try:
-             p.mkdir(parents=True) 
+             p.mkdir(parents=True)
+             self.log.warn(f"chowning {p} to {uid}:{gid}")
+             os.chown(p,uid,gid)
            except Exception as e:
             self.log.error(json.dumps(repr(e)))
             raise
