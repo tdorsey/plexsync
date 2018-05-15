@@ -1,4 +1,5 @@
 var $ = require('jquery');
+var notify = require('./notify-helper');
 
     function onSelectSection(e) {
         var that = this;
@@ -94,12 +95,8 @@ $.ajax({
   url: transferEndpoint,
   data: trimmed,
   complete: function(jqXHR, textStatus)  {
-    var transferNotification = new notify('Transfer Status', {
-        body: jqXHR.responseText,
-        notifyShow: function() { console.log(textStatus); }
-          });
-        transferNotification.show();
-  }
+       notify.showNotification("Transfer Complete", jqXHR.responseText);
+    }
  });
 
 }
@@ -160,6 +157,8 @@ $.ajax({
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
+          notify.getNotificationPermissions();  
+
           toggleCompareFields();
    
           $('#list').click(function(event){
