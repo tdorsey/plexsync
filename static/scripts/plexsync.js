@@ -157,7 +157,6 @@ $.ajax({
           $(".server").prepend(new Option("Select a Server", null, true, true));  
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
-          notify.getNotificationPermissions();  
 
           toggleCompareFields();
    
