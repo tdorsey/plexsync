@@ -1,21 +1,20 @@
 #!/usr/bin/python3
 
-import re
 import enum
-import requests
-import urllib
+import json
 import logging
 import os
-import json
+import re
+import urllib
+
+import requests
+from plexapi import utils
+from plexapi.myplex import MyPlexAccount
+from plexsync.apiobject import APIObject, APIObjectType
+from plexsync.base import Base
+from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 from .celery import celery
-
-from plexapi.myplex import MyPlexAccount
-from plexapi import utils
-
-from plexsync.base import Base
-from plexsync.apiobject import APIObject, APIObjectType
-from plexsync.thirdparty import ThirdParty, ThirdPartyService
 
 
 class PlexSync(Base):
@@ -24,9 +23,17 @@ class PlexSync(Base):
     def __init__(self):
         super().__init__()
 
-        self.show_provider = ThirdParty(ThirdPartyService.Show)
-        self.movie_provider = ThirdParty(ThirdPartyService.Movie)
+        show_enabled = self.settings.get(ThirdPartyService.Show, "enabled")
+        movie_enabled = self.settings.get(ThirdPartyService.Movie, "enabled")
         
+        if show_enabled:
+            self.show_provider = ThirdParty(ThirdPartyService.Show)
+        else:
+            self.log.info(f"{ThirdPartyService.Show} disabled")
+        if movie_enabled:
+            self.movie_provider = ThirdParty(ThirdPartyService.Movie)
+        else:
+            self.log.info(f"{ThirdPartyService.Movie} disabled")
         self.account = self.getAccount()
         self.log.info(f"Account Init: {self.account}")
         self.servers = None
@@ -251,4 +258,3 @@ class PlexSync(Base):
                 log.debug(f"downloaded {renamed_file}")
         except Exception as e:
             log.debug(e)
-
