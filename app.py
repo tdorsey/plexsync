@@ -6,15 +6,13 @@ from plexsync.plexsync import PlexSync
 import json
 import urllib.parse
 import logging
+import traceback
 import sys
-
-app = Flask(__name__)
 
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
-
 
 def as_json():
 # If content type is application/json, return json, else render the template
@@ -194,6 +192,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)
     except Exception as e:
+          app.logger.debug(traceback.print_exc())
           return json.dumps(str(e))
     if as_json():
         return jsonify(result_list)

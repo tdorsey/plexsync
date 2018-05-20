@@ -13,7 +13,7 @@ from plexapi.myplex import MyPlexAccount
 from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
-
+from distutils.util import strtobool
 from .celery import celery
 
 
@@ -23,9 +23,9 @@ class PlexSync(Base):
     def __init__(self):
         super().__init__()
 
-        show_enabled = self.settings.get(ThirdPartyService.Show, "enabled")
-        movie_enabled = self.settings.get(ThirdPartyService.Movie, "enabled")
-        
+        show_enabled = strtobool(self.settings.get(ThirdPartyService.Show.value, "enabled"))
+        movie_enabled = strtobool(self.settings.get(ThirdPartyService.Movie.value, "enabled"))
+
         if show_enabled:
             self.show_provider = ThirdParty(ThirdPartyService.Show)
         else:
