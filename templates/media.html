@@ -12,7 +12,7 @@
     </div>
     <div class="card-footer">
 			    <a href="{{ m.downloadURL }}" type="button" class="btn btn-primary float-sm-left">Download</a>
-			    <button onclick="plexsync.transfer({{ m }})" type="button" class="btn btn-secondary float-sm-right">Transfer</button>
+			    <button type="button" data-item='{{m | tojson | safe }}' onclick="plexsync.onTransferClick(this)" class="transfer btn btn-secondary float-sm-right">Transfer</button>
     </div>
  </div>
 {% endfor %}

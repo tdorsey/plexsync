@@ -7,6 +7,20 @@ var notify = require('./notify-helper');
         var server = $("#serverA").val();
         var endpoint = $`{SCRIPTROOT}/servers/{server}/{section}`;
 } 
+
+function onTransferClick(obj) {
+
+  item = $(obj).data("item");  
+
+   result = transfer(item);
+
+   var subtitle =   $(obj).parent().siblings(".card-subtitle");
+   
+   sessionStorage.setItem(result.key, result);
+   notify.showNotification("Transfer Started", result.message);
+   subtitle.text().append(result.task); 
+
+}
     function onSelectServer(e) {
         var server = $(this).val();
         var dropdownB = $("#serverB");
@@ -34,7 +48,12 @@ var notify = require('./notify-helper');
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
         var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
-         $.ajax({url: endpoint, success: function(result){
+         $.ajax({url: endpoint, 
+            beforeSend: function(req) {
+            //If this is returned as json, flask doesn't render the media item as JSON safely. By accepting html, we ensure the template sanitizes it.
+                req.setRequestHeader("Accept", "text/html");
+            },
+            success: function(result){
                 $("#comparison_results").append(result);
                 resizeMediaDivs();
           }}); 
@@ -90,12 +109,13 @@ var trimmed = {
 
  }
 
+
 $.ajax({
   type: "POST",
   url: transferEndpoint,
   data: trimmed,
   complete: function(jqXHR, textStatus)  {
-       notify.showNotification("Transfer Complete", jqXHR.responseText);
+      return jqXHR.responseJSON;
     }
  });
 
@@ -174,3 +194,4 @@ $.ajax({
 exports.transfer = transfer
 exports.compareLibraries = compareLibraries
 exports.resizeMediaDivs = resizeMediaDivs
+exports.onTransferClick = onTransferClick
