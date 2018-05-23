@@ -14,7 +14,8 @@ from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 from distutils.util import strtobool
-from .celery import celery
+from .celery import celery, getCelery
+from celery.result import AsyncResult
 
 
 class PlexSync(Base):
@@ -40,6 +41,9 @@ class PlexSync(Base):
 
     def printHeaderLine():
         print('*******************')
+
+    def getTask(self, taskID):
+        return celery.AsyncResult(taskID)
 
     def getServers(self, account=None):
         self.log.info(account)
@@ -79,7 +83,7 @@ class PlexSync(Base):
         return filter(lambda x: x.name == section, server.library.sections())
     
     def getResult(self, sectionID, guid):
-         section = self.server.library.section(section)
+         section = self.server.library.sectionByID(sectionID)
          result = section.search(guid=guid)
          print(guid)
          return result
@@ -154,12 +158,11 @@ class PlexSync(Base):
         m.fetchMissingData()
         return m
 
-    @celery.task(throw=True)
-    def transfer2(server, guid):
+    @celery.task(bind=True,throw=True)
+    def transfer2(self, server, guid):
         plexsync = PlexSync()
         plexsync.log.info(f"server - {server}")
         guid = urllib.parse.unquote(guid)
-
         plexsync.log.info(f"GUID:{guid}")
         server = plexsync.getServer(server)
         for section in server.library.sections():
@@ -199,10 +202,34 @@ class PlexSync(Base):
                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
                  plexsync.log.debug(f"url: {url}")
                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                 plexsync.log.debug(renamed_file) 
-                 filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
-                 plexsync.log.debug(f"{filepath}")
-                 plexsync.log.debug(f"old - downloaded {renamed_file}")  
+                 plexsync.log.debug(renamed_file)
+                 
+                 token = media._server._token
+                 headers = {'X-Plex-Token': token}
+
+                response = media._server._session.get(url, headers=headers, stream=True)
+                total = int(response.headers.get('content-length', 0))
+                chunksize = 4096
+                chunks = total / chunksize
+                currentChunk = 0
+                fullpath = os.path.join(savepath, renamed_file)
+                plexsync.log.warn(f"{fullpath}")
+                plexsync.log.warn(f"total: {total}")
+
+                with open(fullpath, 'wb') as handle:
+                    for chunk in response.iter_content(chunk_size=chunksize):
+                        handle.write(chunk)
+                        plexsync.log.warn(f"chunk: {currentChunk}")
+                        currentChunk += 1
+                        #calculate task progress somehow
+                        message = f"{self.taskID} chunk {currentChunk} of {chunks}"
+                        self.update_state(state='PROGRESS',
+                            meta={'current': currentChunk, 'total': total,
+                            'status': message})
+                    
+                 #token used to be required here , token=media._server._token
+                #filepath = utils.download(url, filename=renamed_file, chunksize=chunksize savepath=savepath, session=media._server._session) 
+                #plexsync.log.debug(f"old - downloaded {renamed_file}")  
     @celery.task
     def transfer(media):
 

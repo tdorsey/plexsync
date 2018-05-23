@@ -1,6 +1,7 @@
 var $ = require('jquery');
 var notify = require('./notify-helper');
 
+
     function onSelectSection(e) {
         var that = this;
         var section = $(this).val();
@@ -12,14 +13,13 @@ function onTransferClick(obj) {
 
   item = $(obj).data("item");  
 
-   result = transfer(item);
+   transfer(item).then(function(response) {
 
-   var subtitle =   $(obj).parent().siblings(".card-subtitle");
-   
-   sessionStorage.setItem(result.key, result);
-   notify.showNotification("Transfer Started", result.message);
-   subtitle.text().append(result.task); 
-
+        var subtitle =  $(obj).parent().siblings(".card-subtitle");
+        sessionStorage.setItem(response.result.key, response.result);
+        notify.showNotification("Transfer Started", response.message);
+        subtitle.children(".text-muted").append(response.result.task); 
+    }, null);
 }
     function onSelectServer(e) {
         var server = $(this).val();
@@ -99,25 +99,26 @@ function onTransferClick(obj) {
 
 }
 function transfer(item) {
-guid = encodeURIComponent(item.guid);
-var transferEndpoint = "/transfer";
-var trimmed = {
-
-	guid:  item.guid,
-	server: item.server,
-	section:  item.sectionID
-
- }
-
-
-$.ajax({
-  type: "POST",
-  url: transferEndpoint,
-  data: trimmed,
-  complete: function(jqXHR, textStatus)  {
-      return jqXHR.responseJSON;
+    guid = encodeURIComponent(item.guid);
+    var transferEndpoint = "/transfer";
+    var trimmed = {
+    	guid:  item.guid,
+	    server: item.server,
+	    section:  item.sectionID
     }
- });
+    return new Promise((resolve, reject) => {
+        $.ajax({
+            type: "POST",
+            url: transferEndpoint,
+            data: trimmed,
+            success: function(response, textStatus)  {
+                resolve(response);
+              },
+              error: function(jqXHR, textStatus)  {
+                reject(jqXHR.responseJSON);
+            },
+        });
+    });
 
 }
    function toggleSelected() {

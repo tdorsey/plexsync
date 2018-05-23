@@ -197,7 +197,6 @@ def compare(yourServerName, theirServerName, sectionName=None):
     except Exception as e:
           app.logger.debug(traceback.print_exc())
           return json.dumps(str(e))
-          app.logger.warn("returning json")
     if as_json():
         app.logger.warn("returning json")
         return jsonify(result_list)
@@ -235,7 +234,8 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
-    task = transfer.AsyncResult(task_id)
+    plexsync = PlexSync()
+    task = plexsync.getTask(task_id)
     if task.state == 'PENDING':
         # job did not start yet
         response = {
