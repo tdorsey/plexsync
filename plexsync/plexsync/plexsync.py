@@ -3,19 +3,22 @@
 import enum
 import json
 import logging
+import math
 import os
 import re
-import urllib
-
 import requests
+import urllib
+import time
+
+from celery.result import AsyncResult
 from plexapi import utils
 from plexapi.myplex import MyPlexAccount
 from plexsync.apiobject import APIObject, APIObjectType
 from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 from distutils.util import strtobool
+from tqdm import tqdm
 from .celery import celery, getCelery
-from celery.result import AsyncResult
 
 
 class PlexSync(Base):
@@ -159,8 +162,9 @@ class PlexSync(Base):
         return m
 
     @celery.task(bind=True,throw=True)
-    def transfer2(self, server, guid):
+    def transfer(self, server, guid):
         plexsync = PlexSync()
+        plexsync.log = logging.getLogger('plexsync')
         plexsync.log.info(f"server - {server}")
         guid = urllib.parse.unquote(guid)
         plexsync.log.info(f"GUID:{guid}")
@@ -210,69 +214,27 @@ class PlexSync(Base):
                 response = media._server._session.get(url, headers=headers, stream=True)
                 total = int(response.headers.get('content-length', 0))
                 chunksize = 4096
-                chunks = total / chunksize
+                chunks = math.ceil( total / chunksize )
                 currentChunk = 0
                 fullpath = os.path.join(savepath, renamed_file)
-                plexsync.log.warn(f"{fullpath}")
-                plexsync.log.warn(f"total: {total}")
+                plexsync.log.debug(f"{fullpath}")
+                plexsync.log.debug(f"total: {total}")
 
+                #pbar =  tqdm(disable=True, total=chunks)
                 with open(fullpath, 'wb') as handle:
                     for chunk in response.iter_content(chunk_size=chunksize):
-                        handle.write(chunk)
-                        plexsync.log.warn(f"chunk: {currentChunk}")
-                        currentChunk += 1
-                        #calculate task progress somehow
-                        message = f"{self.taskID} chunk {currentChunk} of {chunks}"
-                        self.update_state(state='PROGRESS',
-                            meta={'current': currentChunk, 'total': total,
-                            'status': message})
-                    
-                 #token used to be required here , token=media._server._token
-                #filepath = utils.download(url, filename=renamed_file, chunksize=chunksize savepath=savepath, session=media._server._session) 
-                #plexsync.log.debug(f"old - downloaded {renamed_file}")  
-    @celery.task
-    def transfer(media):
+                            currentChunk += 1
+                            handle.write(chunk)
+          #                  pbar.update(currentChunk)
+                           
+                            message = f"Chunk {currentChunk} of {chunks}"
+                            meta = {'current': currentChunk, 
+                                    'status': message,
+                                    'total': chunks }
+                                
+                            self.update_state(state='PROGRESS', meta=meta)
+                #pbar.close()        
 
-        self.log.debug('transfer')
-
-        try:
-            if media.type == "show":
-               self.log.debug(f"Getting episodes")
-               tv_root = self.settings.get('download', 'tv_folder')
-               show_folder_path = os.path.join(tv_root, f"{media.title}")
-               self.create_dir(show_folder_path)
-               for season in media.seasons():
-                  season_folder_path = os.path.join(show_folder_path, f"Season {season.seasonNumber}")
-                  self.create_dir(season_folder_path)
-                  self.log.info(f"Starting Season {season.seasonNumber} - {len(season.episodes())} Episodes")
-                  for episode in season:
-                    self.log.info(f"Starting {episode.title}")
-                    tmp = episode.download(season_folder_path)
-                    episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
-                    dest = os.path.join(season_folder_path, episode_path)
-                    os.rename(tmp[0], dest)
-            if media.type == APIObjectType.Movie:
-               for part in media.iterParts():
-                 #We do this manually since we dont want to add a progress to Episode etc
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  savepath = self.settings.get('download', 'movie_folder')
-                  self.log.debug(f"savepath: {savepath}")
-                  self.log.debug(f"media: {media}")
-                  self.log.debug(f"server: {media._server}")
-                  self.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
-                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
-                  self.log.debug(f"url: {url}")
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  self.log.debug(renamed_file)
-                  filepath = utils.download(url=url,
-                                            filename=renamed_file,
-                                            savepath=savepath,
-                                            session=media._server._session,
-                                            token=media._server._token)
-                  self.log.debug(f"{filepath}")
-                  self.log.debug(f"downloaded {renamed_file}")
-        except Exception as e:
-            self.log.debug(e)
     def download(self, media):
         log = logging.getLogger('plexsync')
         try:

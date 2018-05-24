@@ -1,5 +1,6 @@
 var $ = require('jquery');
 var notify = require('./notify-helper');
+var progress = require('./progress-helper');
 
 
     function onSelectSection(e) {
@@ -16,9 +17,11 @@ function onTransferClick(obj) {
    transfer(item).then(function(response) {
 
         var subtitle =  $(obj).parent().siblings(".card-subtitle");
+        var bar = $(obj).siblings(".progress");
         sessionStorage.setItem(response.result.key, response.result);
         notify.showNotification("Transfer Started", response.message);
-        subtitle.children(".text-muted").append(response.result.task); 
+        subtitle.children(".text-muted").append(response.result.task);
+        setTimeout(progress.updateBar, 5000, bar, response.result.task);
     }, null);
 }
     function onSelectServer(e) {
@@ -56,6 +59,8 @@ function onTransferClick(obj) {
             success: function(result){
                 $("#comparison_results").append(result);
                 resizeMediaDivs();
+                $(".progress").toggle(false);
+
           }}); 
 
 } 

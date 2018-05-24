@@ -134,15 +134,12 @@ def transfer():
         if authorized:
             app.logger.debug("building task")
             try:
-              task_result = plexsync.transfer2.delay(theirServer.friendlyName, guid)
+              task_result = plexsync.transfer.delay(theirServer.friendlyName, guid)
             except Exception as e:
               app.logger.error(f"Exception {e}")
               return json.dumps(e)
             msg = f"Transferring {result.title} to {currentUserServer}"
-            response = {} 
-            response["key"] = result.ratingKey
-            response["title"] = result.title
-            response["task"] = task_result.id
+            response = {'key' : result.ratingKey, 'title': result.title, 'task': task_result.id } 
             return jsonify(result=response, message=msg)
         else:
             app.logger.debug(f"not authorized")
