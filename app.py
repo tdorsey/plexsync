@@ -16,12 +16,13 @@ app.config['LOGGER_NAME'] = 'plexsync'
 
 def as_json():
 # If content type is application/json, return json, else render the template
-    best = request.accept_mimetypes \
+ best = request.accept_mimetypes \
         .best_match(['application/json', 'text/html'])
-    rtn =  best == 'application/json' and \
+ return best == 'application/json' and \
         request.accept_mimetypes[best] > \
         request.accept_mimetypes['text/html']
-    return rtn
+
+
 
 plexsync = None
 
@@ -37,9 +38,9 @@ def login():
     session['username'] = request.form['username']
     session['password'] = request.form['password']
 
-    plexsync = PlexSync()
     try:
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexsync = PlexSync()
+        plexsync.getAccount(session['username'], session['password'])
         return redirect(url_for('home', _scheme='https', _external=True), code=303)
     except Exception as e:
         return json.dumps(str(e))
@@ -59,7 +60,7 @@ def home():
 def sections(serverName):
     print(f"routing for {serverName}")
     plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount(session['username'], session['password'])
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
 
@@ -71,7 +72,7 @@ def sections(serverName):
 def media(serverName, section):
     print(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount(session['username'], session['password'])
     
     server = plexsync.getServer(serverName)
     results = plexsync.getResults(server, section)
@@ -86,7 +87,7 @@ def search():
     server = request.form['server']
     section = request.form['section']
     plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount(session['username'], session['password'])
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
@@ -96,11 +97,12 @@ def search():
 
 @app.route('/download', methods=['POST'])
 def download():
+    guid = request.form['guid']
     guid = urllib.parse.unquote(guid)
     server = request.form['server']
     section = request.form['section']
     plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount(session['username'], session['password'])
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
@@ -114,7 +116,7 @@ def transfer():
         guid = request.form['guid']
         guid = urllib.parse.unquote(guid)
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexsync.getAccount(session['username'], session['password'])
 
         ownedServers = plexsync.getOwnedServers()
         currentUserServer = session['yourServer']
@@ -129,18 +131,16 @@ def transfer():
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(section)
             result = section.search(guid=guid).pop()
-            key = result.ratingKey
         if authorized:
             app.logger.debug("building task")
             try:
-              task = plexsync.transfer2.delay(theirServer.friendlyName, guid)
-             # result = task.get(propagate=True)
-              app.logger.debug(f"Task State: {task}")
+              task_result = plexsync.transfer.delay(theirServer.friendlyName, guid)
             except Exception as e:
               app.logger.error(f"Exception {e}")
               return json.dumps(e)
             msg = f"Transferring {result.title} to {currentUserServer}"
-            return msg
+            response = {'key' : result.ratingKey, 'title': result.title, 'task': task_result.id } 
+            return jsonify(result=response, message=msg)
         else:
             app.logger.debug(f"not authorized")
             msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
@@ -153,7 +153,7 @@ def transfer():
 def compare(yourServerName, theirServerName, sectionName=None):
     try:
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(session['username'], session['password'])
+        plexsync.getAccount(session['username'], session['password'])
         sectionsToCompare = []
 
         if not sectionName:
@@ -195,8 +195,10 @@ def compare(yourServerName, theirServerName, sectionName=None):
           app.logger.debug(traceback.print_exc())
           return json.dumps(str(e))
     if as_json():
+        app.logger.warn("returning json")
         return jsonify(result_list)
     else:
+        app.logger.warn("NOT returning json")
         return render_template('media.html', media=result_list)
     
 
@@ -204,7 +206,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
 def compareResults(yourServerName, theirServerName, sectionName=None):
 
     plexsync = PlexSync()
-    plexAccount = plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount(session['username'], session['password'])
     sectionsToCompare = []
 
     if not sectionName:    
@@ -226,6 +228,38 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
         print(f"{len(results)} your diff")
 
         return json.dumps([r.title for r in results], ensure_ascii=False)
+
+@app.route('/task/<task_id>')
+def taskstatus(task_id):
+    plexsync = PlexSync(taskOnly=True)
+    task = plexsync.getTask(task_id)
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
+
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    

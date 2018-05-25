@@ -11,6 +11,12 @@ celery.conf.update(
     result_expires=3600,
 )
 
+def getCelery(self):
+    return celery or Celery('plexsync',
+             broker='pyamqp://rabbitmq:rabbitmq@rabbitmq//',
+             backend='redis://redis:6379/0',
+             include=['plexsync.plexsync'])
+
 if __name__ == '__main__':
     celery.start()
 

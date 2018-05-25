@@ -8,11 +8,26 @@
       <p class="card-text"> {{ m.overview }} </p>
     </div>
     <div class="card-subtitle">
-        <small class="text-muted">  {{ m.rating['value'] }} with {{ m.rating['votes'] }} votes </small>
+        <span class="text-muted small">  {{ m.rating['value'] }} with {{ m.rating['votes'] }} votes </span>
     </div>
     <div class="card-footer">
-			    <a href="{{ m.downloadURL }}" type="button" class="btn btn-primary float-sm-left">Download</a>
-			    <button onclick="plexsync.transfer({{ m }})" type="button" class="btn btn-secondary float-sm-right">Transfer</button>
+        <div class="card-deck">
+            <div class="card">
+                <a href="{{ m.downloadURL }}" type="button" class="btn btn-primary float-sm-left">Download</a>
+            </div>
+            <div class="card">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped bg-success progress-bar-animated" 
+                    role="progressbar" aria-valuemin="0" aria-valuemax="100"><span class="progress-text"></span></div>
+                </div>
+            </div>
+            <div class="card">
+                <button type="button" data-item='{{m | tojson | safe }}'
+                                      onclick="plexsync.onTransferClick(this)"
+                                      class="transfer btn btn-secondary float-sm-right">Transfer
+                </button>
+            </div>
     </div>
- </div>
+    </div>
+</div>
 {% endfor %}
