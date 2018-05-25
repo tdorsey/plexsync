@@ -35,3 +35,13 @@ html, body {height:100%}
     color: white;
     opacity: 0.5;
 }    
+
+.progress, .progress-bar {
+    height: 100%;
+}
+
+.progress-text {
+    text-align: center;
+    font-color: white;
+    font-weight: bold;
+}

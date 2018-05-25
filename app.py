@@ -231,7 +231,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
-    plexsync = PlexSync()
+    plexsync = PlexSync(taskOnly=True)
     task = plexsync.getTask(task_id)
     if task.state == 'PENDING':
         # job did not start yet

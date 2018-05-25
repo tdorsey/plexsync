@@ -13,15 +13,16 @@ var progress = require('./progress-helper');
 function onTransferClick(obj) {
 
   item = $(obj).data("item");  
-
-   transfer(item).then(function(response) {
-
-        var subtitle =  $(obj).parent().siblings(".card-subtitle");
-        var bar = $(obj).siblings(".progress");
+  transfer(item).then(function(response) {
+        //display the progress bar
+        var innerCardDeck =  $(obj).parents(".card-deck");
+        bar = innerCardDeck.find(".progress-bar");
+        bar.closest(".card").toggle(true);
+        
+        //start the transfer 
         sessionStorage.setItem(response.result.key, response.result);
         notify.showNotification("Transfer Started", response.message);
-        subtitle.children(".text-muted").append(response.result.task);
-        setTimeout(progress.updateBar, 5000, bar, response.result.task);
+        progress.updateBar(bar, response.result.task);
     }, null);
 }
     function onSelectServer(e) {
@@ -51,7 +52,7 @@ function onTransferClick(obj) {
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
         var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
-         $.ajax({url: endpoint, 
+         $.ajax({url: endpoint,
             beforeSend: function(req) {
             //If this is returned as json, flask doesn't render the media item as JSON safely. By accepting html, we ensure the template sanitizes it.
                 req.setRequestHeader("Accept", "text/html");
@@ -59,26 +60,26 @@ function onTransferClick(obj) {
             success: function(result){
                 $("#comparison_results").append(result);
                 resizeMediaDivs();
-                $(".progress").toggle(false);
+                $(".progress").closest(".card").toggle(false);
 
-          }}); 
+          }});
 
-} 
+}
 
     function sync() {
         $("#comparison_results").find(".list-group-item.active").each(function() {
             var guid = $(this).attr("data-guid");
             var sectionID = $(this).attr("data-sectionID");
-            var item = { "sectionID" : sectionID, "guid" : guid }; 
+            var item = { "sectionID" : sectionID, "guid" : guid };
             syncItem(item);
           });
 
 }
 
        function syncItem(item) {
-        theirServer = $("#serverB").val(); 
+        theirServer = $("#serverB").val();
         var syncEndpoint = "/search";
-         $.post(syncEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid }, 
+         $.post(syncEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid },
             function(result) {
                 $("sync_results").append(result);
             });
@@ -88,16 +89,16 @@ function onTransferClick(obj) {
         $("#comparison_results").find(".list-group-item.active").each(function() {
             var guid = $(this).attr("data-guid");
             var sectionID = $(this).attr("data-sectionID");
-            var item = { "sectionID" : sectionID, "guid" : guid }; 
+            var item = { "sectionID" : sectionID, "guid" : guid };
             downloadItem(item);
           });
 
 }
 
        function downloadItem(item) {
-        theirServer = $("#serverB").val(); 
+        theirServer = $("#serverB").val();
         var downloadEndpoint = "/download";
-         $.post(downloadEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid }, 
+         $.post(downloadEndpoint, { server : theirServer, section : item.sectionID, guid : item.guid },
             function(result) {
                 $("download_results").append(result);
             });
@@ -168,9 +169,9 @@ function transfer(item) {
         parent = $(result).parent();
         h = $(".result").height();
         if (h > maxHeight) {
-            maxHeight = h; 
+            maxHeight = h;
             var movie = $(result).find(".list-group-item-heading").text();
-            console.log(movie + " is taller" + h + "px"); 
+            console.log(movie + " is taller" + h + "px");
         }
     });
 
@@ -180,16 +181,16 @@ function transfer(item) {
     }
 
     $( document ).ready(function() {
-          $(".server").prepend(new Option("Select a Server", null, true, true));  
+          $(".server").prepend(new Option("Select a Server", null, true, true));
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
 
           toggleCompareFields();
-   
+
           $('#list').click(function(event){
             event.preventDefault();
             $('#comparison_results .item').addClass('list-group-item');});
-    
+
           $('#grid').click(function(event){
                 event.preventDefault();
                 $('#comparison_results .item').removeClass('list-group-item');

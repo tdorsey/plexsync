@@ -24,8 +24,11 @@ from .celery import celery, getCelery
 class PlexSync(Base):
     account = None
 
-    def __init__(self):
+    def __init__(self, taskOnly=False):
         super().__init__()
+         
+        if taskOnly:
+            return
 
         show_enabled = strtobool(self.settings.get(ThirdPartyService.Show.value, "enabled"))
         movie_enabled = strtobool(self.settings.get(ThirdPartyService.Movie.value, "enabled"))
