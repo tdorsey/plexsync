@@ -43,7 +43,7 @@ def login():
         plexsync.getAccount(session['username'], session['password'])
         return redirect(url_for('home', _scheme='https', _external=True), code=303)
     except Exception as e:
-        return json.dumps(str(e))
+       return json.dumps(str(e))
 
 @app.route('/home', methods=['GET'])
 def home():
