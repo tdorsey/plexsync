@@ -22,7 +22,6 @@ from .celery import celery, getCelery
 
 
 class PlexSync(Base):
-    account = None
 
     def __init__(self, taskOnly=False):
         super().__init__()
@@ -73,15 +72,6 @@ class PlexSync(Base):
     def getServer(self, serverName):
         return self.account.resource(serverName).connect()
 
-    def getAccount(self, username=None, password=None):
-        self.log.info("Getting Account")
-        username = username or self.settings.get("auth", "myplex_username")
-        password = password or self.settings.get("auth", "myplex_password")
-
-        if self.account is None:
-            return MyPlexAccount(username, password)
-        else:
-            return self.account
     def getSections(self, server):
         return server.library.sections()
 
@@ -147,17 +137,6 @@ class PlexSync(Base):
         resultsList = list(results)
         resultsList.sort(key=lambda x: x.title)
         return resultsList
-    def compareLibraries(self, yourResults, theirResults):
-        yourSet = set()
-        theirSet = set()
-
-        for r in yourResults:
-            yourSet.add(APIObject(r))
-
-        for r in theirResults:
-            theirSet.add(APIObject(r))
-
-        return theirSet - yourSet
 
     def getAPIObject(self, r):
         m = APIObject(r)
@@ -222,21 +201,42 @@ class PlexSync(Base):
                 fullpath = os.path.join(savepath, renamed_file)
                 plexsync.log.debug(f"{fullpath}")
                 plexsync.log.debug(f"total: {total}")
+                STATUS_CHUNK_INCREMENT = 10000
+                nextStatusChunk = STATUS_CHUNK_INCREMENT
 
-                #pbar =  tqdm(disable=True, total=chunks)
                 with open(fullpath, 'wb') as handle:
                     for chunk in response.iter_content(chunk_size=chunksize):
+                            chunkMessage = f"Chunk {currentChunk} of {chunks}"
+
+                            iterationStartTime = time.time()
                             currentChunk += 1
                             handle.write(chunk)
-          #                  pbar.update(currentChunk)
-                           
-                            message = f"Chunk {currentChunk} of {chunks}"
+                            if ( currentChunk > nextStatusChunk ): #Approx every 40 MB
+                                iterationElapsed = time.time() - iterationStartTime
+                                iterationBytes = chunksize * currentChunk
+                                bytesPerSecond = iterationBytes / iterationElapsed
+                                etaSeconds = math.floor( total / bytesPerSecond )
+                                status = {"chunkMessage" : chunkMessage,
+                                          "currentChunk" : currentChunk,
+                                          "totalChunks" : chunks,
+                                          "chunkSize" : chunksize,
+                                          "totalBytes" : total,
+                                          "bytesPerSecond": bytesPerSecond,
+                                          "iterationElapsed": iterationElapsed,
+                                          "iterationBytes": iterationBytes,
+                                          "iterationStartTime": iterationStartTime,
+                                          "etaSeconds": etaSeconds
+                                        }
+                                nextStatusChunk = nextStatusChunk + STATUS_CHUNK_INCREMENT
+
+                            else:
+                                status = { "currentChunk" : currentChunk,"STATUS_CHUNK_INCREMENT" : STATUS_CHUNK_INCREMENT,  "nextStatusChunk" : nextStatusChunk, "chunkMessage" : chunkMessage, "condition" : currentChunk > nextStatusChunk}
+
                             meta = {'current': currentChunk, 
-                                    'status': message,
+                                    'status': status,
                                     'total': chunks }
                                 
                             self.update_state(state='PROGRESS', meta=meta)
-                #pbar.close()        
 
     def download(self, media):
         log = logging.getLogger('plexsync')

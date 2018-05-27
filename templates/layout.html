@@ -16,6 +16,8 @@
 <script type="text/javascript" src="../static/scripts/bundle.js"></script>
     </head>
     <body>
-        {% block content %}{% endblock %}
+        {% include "messages.html" %}
+        {% block content %}
+        {% endblock %}
     </body>
 </html>

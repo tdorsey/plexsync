@@ -192,13 +192,13 @@ def compare(yourServerName, theirServerName, sectionName=None):
                 result_dict['rating'] = m.rating
                 result_list.append(result_dict)
     except Exception as e:
-          app.logger.debug(traceback.print_exc())
-          return json.dumps(str(e))
+        app.logger.exception(e)
+        response = jsonify(str(e))
+        response.status_code = 500
+        return response
     if as_json():
-        app.logger.warn("returning json")
         return jsonify(result_list)
     else:
-        app.logger.warn("NOT returning json")
         return render_template('media.html', media=result_list)
     
 
