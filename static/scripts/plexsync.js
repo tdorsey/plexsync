@@ -1,7 +1,7 @@
 var $ = require('jquery');
 var notify = require('./notify-helper');
 var progress = require('./progress-helper');
-
+var message = require('./message-helper'); 
 
     function onSelectSection(e) {
         var that = this;
@@ -52,19 +52,31 @@ function onTransferClick(obj) {
         var section = $("#section").val();
         $("#comparison_title").text(`${serverB} has the following new ${section}` );
         var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
-         $.ajax({url: endpoint,
-            beforeSend: function(req) {
+        fnBeforeSend =  function(req) {
             //If this is returned as json, flask doesn't render the media item as JSON safely. By accepting html, we ensure the template sanitizes it.
                 req.setRequestHeader("Accept", "text/html");
-            },
-            success: function(result){
-                $("#comparison_results").append(result);
-                resizeMediaDivs();
-                $(".progress").closest(".card").toggle(false);
+            };
+       
+        var compareRequest = $.ajax({url: endpoint, beforeSend: fnBeforeSend }).done( 
+                function(result){
+                    $("#comparison_results").append(result);
+                    resizeMediaDivs();
+                    $(".progress").closest(".card").toggle(false);
+            }).fail(
+                function(xhr, status, error) {
+                    msg = `${xhr.status}: ${xhr.responseText}`;
+                    message.danger(msg);
+                    message.success(msg);
+                    message.info(msg);
+                    message.warning(msg);
+                    message.primary(msg);
+                    message.secondary(msg);
+                    message.dark(msg);
+                    message.light(msg);
 
-          }});
+            });
 
-}
+    }
 
     function sync() {
         $("#comparison_results").find(".list-group-item.active").each(function() {
@@ -175,7 +187,7 @@ function transfer(item) {
         }
     });
 
-    console.log(maxHeight);
+   // console.log(maxHeight);
     //$(".result").height(maxHeight);
 
     }
@@ -184,8 +196,8 @@ function transfer(item) {
           $(".server").prepend(new Option("Select a Server", null, true, true));
           $("#serverA").change(onSelectServer);
           $(".section").change(onSelectSection);
-
           toggleCompareFields();
+          message.hide();
 
           $('#list').click(function(event){
             event.preventDefault();
