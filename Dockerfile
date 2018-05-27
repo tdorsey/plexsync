@@ -1,35 +1,61 @@
-FROM lsiobase/alpine.python3
+FROM python:3-alpine3.7
 
+USER root
 WORKDIR /app
 
+ENV PUID ${PUID:-1100}
+ENV PGID ${PGID:-1101}
+RUN addgroup -S -g ${PGID} plexsync
+RUN adduser -S -G plexsync -u ${PUID} plexsync
+RUN chown -R plexsync:plexsync /app && chmod -R 770 /app
+
+
+RUN mkdir /downloads # && chown -R plexsync:plexsync /downloads && chmod -R 770 /downloads
+RUN mkdir /logs # && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
+RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 777 /config
+
+CMD ["/entrypoint.sh"]
 # Expose the Flask port
 EXPOSE 5000
 
-ENTRYPOINT [ "python3" ]
-
-CMD ["app.py"]
-
 VOLUME /config
+VOLUME /logs
 VOLUME /downloads
+WORKDIR /app
 
-RUN apk update && apk add nodejs
-RUN npm install -g browserify notifyjs
-RUN npm link notifyjs
+COPY entrypoint.sh /
+COPY config/config.ini /config
 
-COPY requirements.txt .
-COPY config.ini /config/
-COPY /templates ./templates
-COPY /static  ./static
+RUN apk update && apk add nodejs python3 git
 
-RUN browserify -d ./static/scripts/main.js > ./static/scripts/bundle.js
+RUN pip3 install --upgrade pip 
 
+COPY requirements.txt.dev .
+RUN pip3 install -r requirements.txt
 
+COPY package.json /app
+COPY webpack.config.js /app
+
+##RUN chmod g+s .
+
+#USER plexsync
+
+RUN npm install
 COPY app.py .
+
+COPY /static  ./static
+#TODO: Symlinking should work here but doesn't, figure out why
+RUN cp node_modules/octicons/build/svg/* ./static/images
+RUN chown -R plexsync:plexsync /downloads && chmod -R 777 /downloads
+
+RUN npm run build
+
+
+COPY /templates ./templates
+
+RUN chown -R  plexsync:plexsync /app
+
+
 COPY /plexsync/ ./plexsync
 
-RUN pip install -r requirements.txt 
-
-
-
-
-
+RUN pip3 install -e ./plexsync

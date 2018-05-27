@@ -9,24 +9,26 @@
   "main": "index.js",
   "private": "true",
   "dependencies": {
-    "bootstrap": "^4.1.1",
-    "enumify": "^1.0.4",
-    "exorcist": "^1.0.1",
-    "jquery": "^3.3.1",
-    "list.js": "^1.5.0",
-    "notifyjs": "^3.0.0",
-    "octicons": "^7.3.0",
-    "parcelify": "^2.2.0",
-    "popper.js": "^1.14.3",
-    "uglify": "^0.1.5"
+    "bootstrap": "latest",
+    "enumify": "latest",
+    "jquery": "latest",
+    "list.js": "latest",
+    "notifyjs": "latest",
+    "octicons": "latest",
+    "popper.js": "latest"
   },
   "devDependencies": {
+    "css-loader": "^0.28.11",
+    "file-loader": "^1.1.11",
+    "style-loader": "^0.21.0",
     "webpack": "^4.9.1",
     "webpack-cli": "^2.1.4"
   },
   "scripts": {
-   "build": "webpack", 
-   "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack",
+    "build:dev": "webpack --config ./webpack.dev.config.js",
+    "start": "webpack-dev-server --config ./App/webpack.config.js --progress --colors",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

@@ -34,7 +34,7 @@ COPY requirements.txt.dev .
 RUN pip3 install -r requirements.txt.dev
 
 COPY package.json /app
-COPY webpack.config.js /app
+COPY webpack.*.config.js /app
 
 ##RUN chmod g+s .
 
@@ -48,7 +48,7 @@ COPY /static  ./static
 RUN cp node_modules/octicons/build/svg/* ./static/images
 RUN chown -R plexsync:plexsync /downloads && chmod -R 777 /downloads
 
-RUN npm run build
+RUN npm run build:dev
 
 
 COPY /templates ./templates
