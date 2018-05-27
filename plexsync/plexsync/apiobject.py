@@ -1,102 +1,102 @@
+import enum
 import logging
 import re
 import requests
 import time
+import traceback
 import urllib
 
+from pprint import pprint
 from plexapi.video import Video
-
 def _hash(self):
     return hash(self.title) 
 
 def _eq(self, other):
-    return (self.title == other.title)     
+    return (self.title == other.title)
 
 Video.__hash__ = _hash
 Video.__eq__ = _eq
 
-from plexsync.base import *
+from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
-
-show_provider = ThirdParty(ThirdPartyService.Show)
-movie_provider = ThirdParty(ThirdPartyService.Movie)
 
 class APIObjectType(enum.Enum):
     Show = "show"
     Movie = "movie"
     Episode = "episode"
 
-class APIObject(Video):
+
+class APIObject(Base):
     def __init__(self, video):
-        self.log = logging.getLogger('plexsync')
-        if video.type == "episode":
-           self.title = video.show().title
-           self.type = APIObjectType.Episode
-           self.provider = show_provider
-           self.guid = video.show().guid
-        elif video.type == "show":
+      try:
+        super().__init__()
+        self.guid = video.guid
+        self.type = video.type
+        self.overview = video.summary
+        self.rating = video.rating
+        self.year = video.year
+        self.title = video.title
+        self.guid = video.guid
+        self.image = video.artUrl
+        self.qualityProfileId = None
+        self.titleSlug = None
+        self.librarySectionID = video.librarySectionID
+        self.downloadURL = self._getDownloadURL(video)
+        self.provider = None
+
+        if video.type == "show":
+          if self.settings.get(ThirdPartyService.Show.value, "enabled") is True:
+             self.provider = ThirdParty(ThirdPartyService.Show)
+         
+          self.seasons = []
+          self.title = video.show().title
+          self.type = APIObjectType.Show
+
+        elif video.type == "episode":
+            if self.settings.get(ThirdPartyService.Show.value, "enabled") is True:
+              self.provider = ThirdParty(ThirdPartyService.Show)
+
+            self.guid = video.show().guid
             self.title = video.title
             self.type = APIObjectType.Show
-            self.provider = show_provider
-            self.guid = video.guid
-            self.overview = video.summary
-            self.rating = video.rating
-            self.year = video.year
-            #plex api doesn't support poster directly, just the banner, but it's a plex structured url, so swap it.
-            if video.banner is None:
-              self.log.debug(f"no banner: Falling back to {video.artUrl}")
-              self.image= video.artUrl
-            else:
-              self.log.debug(f"Switching banner to poster {video.banner}")
-              self.image =  video.url(video.banner).replace("banner", "poster")
+
         elif video.type == "movie":
-            self.title = video.title
-            self.type = APIObjectType.Movie
-            self.provider = movie_provider
-            self.guid = video.guid
-            self.image = video.artUrl
+           self.type = APIObjectType.Movie
+           if self.settings.get(ThirdPartyService.Movie.value, "enabled") is True:
+              self.provider = ThirdParty(ThirdPartyService.Movie)
         else:
             self.log.debug(f"Unable to determine Object Type for {video}")
             return None
-        self.search_term = self._createSearchTerm()
-        self.qualityProfileId = None
-        self.titleSlug = None
-        self.seasons = []
-        self.librarySectionID = video.librarySectionID
-        self.downloadURL = self._getDownloadURL(video)
-      
-    def isMovie(self):
-        return self.type == APIObjectType.Movie
 
-    def isShow(self):
-        return self.type == APIObjectType.Show
-    
-    def isEpisode(self):
-        return self.type == APIObjectType.Episode
+        if self.provider:
+            self.search_term = self._createSearchTerm()
+
+      except:
+        traceback.print_exc()
 
     def _createSearchTerm(self):
         shortGUID = self._extractGUID(self.guid)
-        if self.isMovie():
+        if self.type == APIObjectType.Movie.value:
             return str(f"imdb:tt{shortGUID}")
-        elif self.isShow():
+        elif self.type == APIObjectType.Show.value:
             return str(f"tvdb:{shortGUID}")
 
     def _getDownloadURL(self, video):
-        if self.isMovie():
-          for part in video.iterParts():
-        #We do this manually since we dont want to add a progress to Episode etc
-              url = video._server.url('%s?download=1' %part.key)
-          return url
-        elif self.isShow():
+        if self.type == APIObjectType.Movie.value:
+             for part in video.iterParts():
+                 url = video._server.url(f"{part.key}?download=1", includeToken=True)
+             return url
+        elif self.type == APIObjectType.Show.value:
              episode =  video.episodes()[0]
              for part in episode.iterParts():
-                 url = episode._server.url('%s?download-1' %part.key)
-                 return url
+                 url = episode._server.url(f"{part.key}?download=1", includeToken=True)
+             return url
+
     def __key(self):
         return (self.guid)
 
-    def __eq__(x, y):
-        return x.__key() == y.__key()
+    def __eq__(self, other):
+        return self.__key() == other.__key()
 
     def __hash__(self):
         return hash(self.__key())
@@ -109,8 +109,9 @@ class APIObject(Video):
 
     def fetchMissingData(self):
         try:
-            lookup_json = self.provider.lookupMedia(self)
-            if lookup_json:
+            if self.provider is not None:
+              lookup_json = self.provider.lookupMedia(self)
+              if lookup_json is not None:
                 self._setMissingData(lookup_json)
         except requests.exceptions.HTTPError as e:
             self.log.debug(f"Request exception: {e}")
@@ -131,20 +132,20 @@ class APIObject(Video):
         if not self.image:
            self.image = item["images"]
 
-        if self.isMovie():
+        if self.type == APIObjectType.Movie.value:
             self.titleSlug = item["titleSlug"]
             self.qualityProfile = item["qualityProfileId"]
             self.year = item["year"]    
             self.tmdbId = item["tmdbId"]    
             self.overview = item["overview"]
             self.rating = item["ratings"]
-        elif self.isShow():
+        elif self.type == APIObjectType.Show.value:
             self.titleSlug = item["titleSlug"]
             self.seasons = item["seasons"]
             self.qualityProfile = item["qualityProfileId"]
             self.year = item["year"]
             self.rating = item["ratings"]
-        elif self.isEpisode():
+        elif self.type == APIObjectType.Episode.value:
              self.titleSlug = item["titleSlug"]
              self.qualityProfile = item["qualityProfileId"]
              self.year = item["year"]

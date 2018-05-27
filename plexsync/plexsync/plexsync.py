@@ -1,38 +1,54 @@
 #!/usr/bin/python3
 
-import re
 import enum
+import json
+import logging
+import math
+import os
+import re
 import requests
 import urllib
-import logging
-import os
-import json
+import time
 
-from .celery import celery
-
-from plexapi.myplex import MyPlexAccount
+from celery.result import AsyncResult
 from plexapi import utils
-
-from plexsync.base import Base
+from plexapi.myplex import MyPlexAccount
 from plexsync.apiobject import APIObject, APIObjectType
+from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
+from distutils.util import strtobool
+from tqdm import tqdm
+from .celery import celery, getCelery
 
 
 class PlexSync(Base):
-    account = None
 
-    def __init__(self):
+    def __init__(self, taskOnly=False):
         super().__init__()
+         
+        if taskOnly:
+            return
 
-        self.show_provider = ThirdParty(ThirdPartyService.Show)
-        self.movie_provider = ThirdParty(ThirdPartyService.Movie)
-        
+        show_enabled = strtobool(self.settings.get(ThirdPartyService.Show.value, "enabled"))
+        movie_enabled = strtobool(self.settings.get(ThirdPartyService.Movie.value, "enabled"))
+
+        if show_enabled:
+            self.show_provider = ThirdParty(ThirdPartyService.Show)
+        else:
+            self.log.info(f"{ThirdPartyService.Show} disabled")
+        if movie_enabled:
+            self.movie_provider = ThirdParty(ThirdPartyService.Movie)
+        else:
+            self.log.info(f"{ThirdPartyService.Movie} disabled")
         self.account = self.getAccount()
         self.log.info(f"Account Init: {self.account}")
         self.servers = None
 
     def printHeaderLine():
         print('*******************')
+
+    def getTask(self, taskID):
+        return celery.AsyncResult(taskID)
 
     def getServers(self, account=None):
         self.log.info(account)
@@ -56,15 +72,6 @@ class PlexSync(Base):
     def getServer(self, serverName):
         return self.account.resource(serverName).connect()
 
-    def getAccount(self, username=None, password=None):
-        self.log.info("Getting Account")
-        username = username or self.settings.get("auth", "myplex_username")
-        password = password or self.settings.get("auth", "myplex_password")
-
-        if self.account is None:
-            return MyPlexAccount(username, password)
-        else:
-            return self.account
     def getSections(self, server):
         return server.library.sections()
 
@@ -72,7 +79,7 @@ class PlexSync(Base):
         return filter(lambda x: x.name == section, server.library.sections())
     
     def getResult(self, sectionID, guid):
-         section = self.server.library.section(section)
+         section = self.server.library.sectionByID(sectionID)
          result = section.search(guid=guid)
          print(guid)
          return result
@@ -130,29 +137,18 @@ class PlexSync(Base):
         resultsList = list(results)
         resultsList.sort(key=lambda x: x.title)
         return resultsList
-    def compareLibraries(self, yourResults, theirResults):
-        yourSet = set()
-        theirSet = set()
-
-        for r in yourResults:
-            yourSet.add(APIObject(r))
-
-        for r in theirResults:
-            theirSet.add(APIObject(r))
-
-        return theirSet - yourSet
 
     def getAPIObject(self, r):
         m = APIObject(r)
         m.fetchMissingData()
         return m
 
-    @celery.task(throw=True)
-    def transfer2(server, guid):
+    @celery.task(bind=True,throw=True)
+    def transfer(self, server, guid):
         plexsync = PlexSync()
+        plexsync.log = logging.getLogger('plexsync')
         plexsync.log.info(f"server - {server}")
         guid = urllib.parse.unquote(guid)
-
         plexsync.log.info(f"GUID:{guid}")
         server = plexsync.getServer(server)
         for section in server.library.sections():
@@ -192,53 +188,56 @@ class PlexSync(Base):
                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
                  plexsync.log.debug(f"url: {url}")
                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                 plexsync.log.debug(renamed_file) 
-                 filepath = utils.download(url, filename=renamed_file, savepath=savepath, session=media._server._session, token=media._server._token) 
-                 plexsync.log.debug(f"{filepath}")
-                 plexsync.log.debug(f"old - downloaded {renamed_file}")  
-    @celery.task
-    def transfer(media):
+                 plexsync.log.debug(renamed_file)
+                 
+                 token = media._server._token
+                 headers = {'X-Plex-Token': token}
 
-        self.log.debug('transfer')
+                response = media._server._session.get(url, headers=headers, stream=True)
+                total = int(response.headers.get('content-length', 0))
+                chunksize = 4096
+                chunks = math.ceil( total / chunksize )
+                currentChunk = 0
+                fullpath = os.path.join(savepath, renamed_file)
+                plexsync.log.debug(f"{fullpath}")
+                plexsync.log.debug(f"total: {total}")
+                STATUS_CHUNK_INCREMENT = 10000
+                nextStatusChunk = STATUS_CHUNK_INCREMENT
 
-        try:
-            if media.type == "show":
-               self.log.debug(f"Getting episodes")
-               tv_root = self.settings.get('download', 'tv_folder')
-               show_folder_path = os.path.join(tv_root, f"{media.title}")
-               self.create_dir(show_folder_path)
-               for season in media.seasons():
-                  season_folder_path = os.path.join(show_folder_path, f"Season {season.seasonNumber}")
-                  self.create_dir(season_folder_path)
-                  self.log.info(f"Starting Season {season.seasonNumber} - {len(season.episodes())} Episodes")
-                  for episode in season:
-                    self.log.info(f"Starting {episode.title}")
-                    tmp = episode.download(season_folder_path)
-                    episode_path =  str(f"{episode.show().title} - {episode.seasonEpisode} - {episode.title}.{episode.media[0].container}") 
-                    dest = os.path.join(season_folder_path, episode_path)
-                    os.rename(tmp[0], dest)
-            if media.type == APIObjectType.Movie:
-               for part in media.iterParts():
-                 #We do this manually since we dont want to add a progress to Episode etc
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  savepath = self.settings.get('download', 'movie_folder')
-                  self.log.debug(f"savepath: {savepath}")
-                  self.log.debug(f"media: {media}")
-                  self.log.debug(f"server: {media._server}")
-                  self.log.debug(f"{media._server._baseurl} {part.key} {media._server._token}")
-                  url = media._server.url(f"{part.key}?download=1", includeToken=True)
-                  self.log.debug(f"url: {url}")
-                  renamed_file = f"{media.title} [{media.year}].{part.container}"
-                  self.log.debug(renamed_file)
-                  filepath = utils.download(url=url,
-                                            filename=renamed_file,
-                                            savepath=savepath,
-                                            session=media._server._session,
-                                            token=media._server._token)
-                  self.log.debug(f"{filepath}")
-                  self.log.debug(f"downloaded {renamed_file}")
-        except Exception as e:
-            self.log.debug(e)
+                with open(fullpath, 'wb') as handle:
+                    for chunk in response.iter_content(chunk_size=chunksize):
+                            chunkMessage = f"Chunk {currentChunk} of {chunks}"
+
+                            iterationStartTime = time.time()
+                            currentChunk += 1
+                            handle.write(chunk)
+                            if ( currentChunk > nextStatusChunk ): #Approx every 40 MB
+                                iterationElapsed = time.time() - iterationStartTime
+                                iterationBytes = chunksize * currentChunk
+                                bytesPerSecond = iterationBytes / iterationElapsed
+                                etaSeconds = math.floor( total / bytesPerSecond )
+                                status = {"chunkMessage" : chunkMessage,
+                                          "currentChunk" : currentChunk,
+                                          "totalChunks" : chunks,
+                                          "chunkSize" : chunksize,
+                                          "totalBytes" : total,
+                                          "bytesPerSecond": bytesPerSecond,
+                                          "iterationElapsed": iterationElapsed,
+                                          "iterationBytes": iterationBytes,
+                                          "iterationStartTime": iterationStartTime,
+                                          "etaSeconds": etaSeconds
+                                        }
+                                nextStatusChunk = nextStatusChunk + STATUS_CHUNK_INCREMENT
+
+                            else:
+                                status = { "currentChunk" : currentChunk,"STATUS_CHUNK_INCREMENT" : STATUS_CHUNK_INCREMENT,  "nextStatusChunk" : nextStatusChunk, "chunkMessage" : chunkMessage, "condition" : currentChunk > nextStatusChunk}
+
+                            meta = {'current': currentChunk, 
+                                    'status': status,
+                                    'total': chunks }
+                                
+                            self.update_state(state='PROGRESS', meta=meta)
+
     def download(self, media):
         log = logging.getLogger('plexsync')
         try:
@@ -251,4 +250,3 @@ class PlexSync(Base):
                 log.debug(f"downloaded {renamed_file}")
         except Exception as e:
             log.debug(e)
-

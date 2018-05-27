@@ -21,7 +21,11 @@ class Config():
                 self.searchForMissing = settings.get(service.value, 'searchForMissing')
             except configparser.NoOptionError:
                 self.searchForMissing = self.setSearchForMissingSetting()
-
+            try:
+                self.enabled = settings.get(service.value, 'enabled')
+            except configparser.NoOptionError:
+                self.enabled = self.setEnabledSetting()
+            
     def setIgnoreWithFilesSetting(self):
             print(f"setting ignore with files for {self.service.value}")
             KEY = 'ignore_with_files'
@@ -48,3 +52,12 @@ class Config():
             settings.set(section, KEY, search_for_missing_string)
             writeSettings(settings)
             return search_for_missing_string
+
+    def setSearchForMissingSetting(self):
+            print(f"setting enabled for {self.service.value}")
+            KEY = 'enabled'
+            section = self.service.value
+            enabled_string = str(strtobool(input("Enable?:")))
+            settings.set(section, KEY, enabled_string)
+            writeSettings(settings)
+            return enabled_string

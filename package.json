@@ -1,0 +1,40 @@
+{
+  "name": "plexsync",
+  "version": "0.8.0",
+  "description": "Plexsync",
+  "style": [
+    "./static/css/*.css",
+    "node_modules/octicons/build/*.css"
+  ],
+  "main": "index.js",
+  "private": "true",
+  "dependencies": {
+    "bootstrap": "^4.1.1",
+    "enumify": "^1.0.4",
+    "exorcist": "^1.0.1",
+    "jquery": "^3.3.1",
+    "list.js": "^1.5.0",
+    "notifyjs": "^3.0.0",
+    "octicons": "^7.3.0",
+    "parcelify": "^2.2.0",
+    "popper.js": "^1.14.3",
+    "uglify": "^0.1.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tdorsey/plexsync.git"
+  },
+  "keywords": [
+    "PlexSync"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tdorsey/plexsync/issues"
+  },
+  "homepage": "https://github.com/tdorsey/plexsync#readme"
+}

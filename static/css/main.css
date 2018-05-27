@@ -1,6 +1,7 @@
 html, body {height:100%}
 
 .media_list { width: 50%; float: left; }
+
 .messages    { 
     position: fixed;
     z-index: 100; 
@@ -29,7 +30,18 @@ html, body {height:100%}
     padding-left: 3%;
 }
 
-.glyphicon-sort {
-    display: inline-block;
-    transform: rotate(90deg);
+.card-img-overlay {
+    background-color: black;
+    color: white;
+    opacity: 0.5;
+}    
+
+.progress, .progress-bar {
+    height: 100%;
+}
+
+.progress-text {
+    text-align: center;
+    font-color: white;
+    font-weight: bold;
 }
