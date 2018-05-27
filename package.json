@@ -20,9 +20,13 @@
     "popper.js": "^1.14.3",
     "uglify": "^0.1.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "webpack": "^4.9.1",
+    "webpack-cli": "^2.1.4"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+   "build": "webpack", 
+   "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
