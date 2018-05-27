@@ -1,12 +1,13 @@
 {
   "name": "plexsync",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Plexsync",
   "style": [
     "./static/css/*.css",
     "node_modules/octicons/build/*.css"
   ],
   "main": "index.js",
+  "private": "true",
   "dependencies": {
     "bootstrap": "^4.1.1",
     "enumify": "^1.0.4",
