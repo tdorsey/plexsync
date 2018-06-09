@@ -1,55 +1,57 @@
 $ = require('jquery');
+message = require('./message-helper');
+function createBar(barID) {
 
-var _total = null;
-var _current = null;
-var _bar = null;
-var _taskGUID = null;
-var _interval = null;
+    var bar =  $.parseHTML(`<div id="${barID}" class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+                                  role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                        <span class="progress-text"></span>
+                </div>`);
+
+    return $(bar);
+}
 
 function updateBar(bar, taskGUID) {
-    _bar = bar;
-    _taskGUID = taskGUID;
-    _interval = setInterval(doUpdate, 10 *1000);
-  
+    doUpdate(taskGUID)
+    interval = setInterval(doUpdate, 10 *1000, [taskGUID]);
+
     }
-    
 
-
-
-
-function doUpdate() {
+function doUpdate(taskGUID) {
 
         $.ajax({
             type: "GET",
-            url: `/task/${_taskGUID}`,
-            success: function(response, textStatus)  {
-                _total = response.total;
-                _current = response.current;
+            url: `/task/${taskGUID}` }).done(
+                function(response, textStatus)  {
+                total = response.total;
+                current = response.current;
                 statusText = response.status;
 
-                statusPercentage = Math.floor(( _current / _total) * 100);
+                statusPercentage = Math.floor(( current / total) * 100);
                 statusPercentageDisplay = `${statusPercentage}%`;
 
+                var bar = $("#" + taskGUID);
 
-                $(_bar).closest(".card").toggle(true);
-                $(_bar).attr('aria-valuemin', 0);
-                $(_bar).attr('aria-valuemax', 100);
-                $(_bar).attr('aria-valuenow', statusPercentage);
-                $(_bar).width(statusPercentageDisplay);
-                $(".progress-text").text(statusPercentageDisplay);
+                bar.closest(".card").toggle(true);
+                bar.attr('aria-valuemin', 0);
+                bar.attr('aria-valuemax', 100);
+                bar.attr('aria-valuenow', statusPercentage);
+                bar.width(statusPercentageDisplay);
+                bar.children(".progress-text").text(statusPercentageDisplay);
 
-                if (_total === _current) {
+                if (response.state && response.state == "SUCCESS") {
 
-                    clearInterval(_interval);
-                    notify.showNotification("Transfer Completed", textStatus);
+                    clearInterval(interval);
+                    notify.showNotification("Transfer Completed", response.message);
 
                 }
-            },
+            }).fail(function(response, status){
+                clearInterval(interval);
+                message.danger(response.responseText);
+            });
            
-        });
-       
-};
+               
+        }
 
-
-    exports.updateBar = updateBar;
+exports.createBar = createBar;
+exports.updateBar = updateBar;
 

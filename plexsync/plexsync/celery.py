@@ -18,5 +18,4 @@ def getCelery(self):
              include=['plexsync.plexsync'])
 
 if __name__ == '__main__':
-    celery.start()
-
+    celery.start(argv=['celery', 'worker', '-l', 'debug'])

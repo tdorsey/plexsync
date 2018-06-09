@@ -49,7 +49,7 @@ class APIObject(Base):
              self.provider = ThirdParty(ThirdPartyService.Show)
          
           self.seasons = []
-          self.title = video.show().title
+          self.title = video.title
           self.type = APIObjectType.Show
 
         elif video.type == "episode":

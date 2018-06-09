@@ -14,7 +14,7 @@ RUN mkdir /downloads # && chown -R plexsync:plexsync /downloads && chmod -R 770 
 RUN mkdir /logs # && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
 RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 777 /config
 
-CMD ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 # Expose the Flask port
 EXPOSE 5000
 
