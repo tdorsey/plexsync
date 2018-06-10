@@ -376,12 +376,12 @@ class PlexSync(Base):
                                 media_info["destination"] = os.path.join(
                                     media_info["folderPath"], media_info["fileName"])
                                 self.log.debug(f"result: {media_info}, {media}")
-                                task = self.download_media.signature(media_info=media_info)
+                                task = self.download_media.signature(args=[media_info])
                                 self.log.debug(f"Task: {task}")
                                 episode_list.append(task)
 
                         job = group(episode_list)
-                        group_result = job.delay(media_info=media_info)
+                        group_result = job.delay()
                         group_result.save()
                         self.log.warn(f"grpres: {group_result}")
 
@@ -428,7 +428,7 @@ class PlexSync(Base):
                                         }
                             media_info["destination"] = os.path.join(
                                 media_info["folderPath"], media_info["fileName"])
-                            taskResult = self.download_media.delay(media_info)
+                            taskResult = self.download_media.delay(args=[media_info])
                             response = {'key': part.key,
                                         'guid': media.guid,
                                         'title': media.title,

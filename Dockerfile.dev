@@ -50,7 +50,7 @@ COPY /static  ./static
 #TODO: Symlinking should work here but doesn't, figure out why
 RUN cp node_modules/octicons/build/svg/* ./static/images
 RUN chown -R plexsync:plexsync /downloads && chmod -R 777 /downloads
-
+ 
 
 COPY /templates ./templates
 
@@ -63,3 +63,4 @@ RUN chown -R  plexsync:plexsync /app
 COPY /plexsync/ ./plexsync
 
 RUN pip3 install -e ./plexsync
+
