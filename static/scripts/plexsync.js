@@ -62,6 +62,7 @@ function compareLibraries() {
     var serverB = $("#serverB").val();
     var section = $("#section").val();
     $("#comparison_title").text(`${serverB} has the following new ${section}`);
+    $("#comparison_results").empty();
     var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
     fnBeforeSend = function (req) {
         //If this is returned as json, flask doesn't render the media item as JSON safely. By accepting html, we ensure the template sanitizes it.
