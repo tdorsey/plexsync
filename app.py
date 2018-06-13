@@ -152,7 +152,7 @@ def transfer():
         if authorized:
             app.logger.debug("building task")
             try:
-                transferred = plexsync.transfer(theirServer.friendlyName, guid)
+                transferred = plexsync.transfer(theirServer.friendlyName, sectionID, guid)
                 app.logger.debug(f"Transferred Results {transferred} Len: {len(transferred)}")
             except Exception as e:
                 app.logger.exception(f"Exception {e}")
@@ -233,7 +233,6 @@ def compare(yourServerName, theirServerName, sectionName=None):
         return jsonify(result_list)
     else:
         return render_template('media.html', media=result_list)
-    
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
@@ -242,7 +241,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
     plexsync.getAccount(session['username'], session['password'])
     sectionsToCompare = []
 
-    if not sectionName:    
+    if not sectionName:
         settings = plexsync.getSettings()
         sectionsToCompare = settings.get('sections', 'sections').split(",")
     else:
@@ -250,7 +249,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
     yourServer = plexsync.getServer(yourServerName)
     theirServer = plexsync.getServer(theirServerName)
-    
+
     for section in sectionsToCompare:
         yourLibrary = plexsync.getResults(yourServer, section)
         theirLibrary = plexsync.getResults(theirServer, section)
@@ -262,7 +261,6 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
         return json.dumps([r.title for r in results], ensure_ascii=False)
 
->>>>>>> Working group progress bar
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
     task = PlexSync.getTask(task_id)
@@ -271,7 +269,7 @@ def taskstatus(task_id):
         response = jsonify(task)
         response.status_code = 200
         return response
- 
+
     if task.state == 'PENDING':
     # job did not start yet
         response = {

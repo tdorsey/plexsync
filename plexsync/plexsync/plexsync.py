@@ -202,11 +202,36 @@ class PlexSync(Base):
 
     @celery.task(bind=True)
     def download_media(self, media_info):
-<<<<<<< HEAD
         with open("/app/transfer.txt", "w") as file:
             file.write("hi bob")
             file.write(str(self))
             file.write(str(media_info))
+            plexsync = PlexSync()
+            guid = media_info.get("guid")
+            serverName = media_info.get("server")
+            sectionID = media_info.get("section")
+            season = media_info.get("season")
+            episode = media_info.get("episode")
+            key =  media_info.get("key")
+            ratingKey = media_info.get("ratingKey")
+            for k,v in media_info.items():
+                file.write(f"Key: {k} - Value: {v}\n")
+            server = plexsync.getServer(serverName)
+            file.write(f"{str(server)}\n")
+            file.write(f"{sectionID}")
+
+            section = server.library.sectionByID(str(sectionID))
+
+            if section.type == "show":
+                results = section.searchEpisodes(guid=guid).pop()
+            elif section.type == "movie":
+                results = [section.search(guid=guid).pop()]
+                file.write(f"{len(results)}")
+            media = next(iter(results), None)
+            file.write(f"{len(results)} Results found\n")
+            file.write(f"sectionkey = {section.key} {section.type}\n")
+            file.write(f"{media} Media\n")
+
             plexsync = PlexSync()
             guid = media_info.get("guid")
             serverName = media_info.get("server")
@@ -229,27 +254,11 @@ class PlexSync(Base):
                 results = [section.search(guid=guid).pop()]
                 file.write(f"{len(results)}")
             media = next(iter(results), None)
+
             file.write(f"{len(results)} Results found\n")
             file.write(f"sectionkey = {section.key} {section.type}\n")
             file.write(f"{media} Media\n")
 
-=======
-            plexsync = PlexSync()
-            guid = media_info["guid"]
-            serverName = media_info["server"]
-            sectionID = media_info["section"]
-            season = media_info["season"]
-            episode = media_info["episode"]
-            key = media_info["key"]
-            ratingKey = media_info["ratingKey"]
-            server = plexsync.getServer(serverName)
-            section = server.library.sectionByID(sectionID)
-            if section.type == "show":
-                results = section.searchEpisodes(guid=guid).pop()
-            elif section.type == "movie":
-                results = section.search(guid).pop()
-            media = next(iter(results), None)
->>>>>>> Working group progress bar
             for part in media.iterParts():
                 url = media._server.url(
                     f"{part.key}?download=1", includeToken=True)
@@ -330,35 +339,29 @@ class PlexSync(Base):
         if media.type == "episode":
             filename = f"{media.show().title} - {media.seasonEpisode} - {media.title}.{media.media.pop().container}"
         if media.type == "movie":
-            filename = f"{media.title}.{media.media.pop().container}"
+            filename = f"{media.title} [{media.year}].{media.media.pop().container}"
         self.log.debug(f"{filename}")
         return filename
 
-    def transfer(self, server, guid):
+    def transfer(self, serverName, sectionID, guid):
         try:
-                plexsync = PlexSync()
-                server = plexsync.getServer(server)
-                for section in server.library.sections():
-                    if section.type not in ["movie", "show"]:
-                        continue
-                    self.log.debug(
-                        f"Searching a {section.type} section for GUID {guid}")
-                    if section.type == "movie":
-                        results = section.search(guid=guid)
-                    if section.type == "show":
-                        results = section.search(guid=guid)
-                        self.log.debug(f"{section.title} {section.type}")
-                        self.log.debug(f"{len(results)} Results found")
+                    plexsync = PlexSync()
+                    server = plexsync.getServer(serverName)
+                    section = server.library.sectionByID(sectionID)
+                    self.log.warn(f"sectionkey = {section.key} {section.type}")
+                    results = section.search(guid=guid)
+                    self.log.warn(f"{section.title} {section.type}")
+                    self.log.warn(f"{len(results)} Results found")
 
                     if len(results) == 1:
                         media = results.pop()
-                        self.log.debug(f"{len(results)} Results found")
-                        self.log.debug(f"{media} Media")
+                        self.log.warn(f"{media} Media")
 
                     else:
-                        continue
+                        self.log.warn("too many results")
+                    media_list = []
+                    
                     if media and media.type == "show":
-                        media_list = []
                         episode_list = [] 
                         for season in media.seasons():
                             for episode in season:
@@ -385,7 +388,6 @@ class PlexSync(Base):
                         group_result.save()
                         self.log.warn(f"grpres: {group_result}")
 
-                        media_list = []
                         response = {
                         'key': media.key,
                         'guid': media.guid,
@@ -394,10 +396,9 @@ class PlexSync(Base):
                         'episodes': len(media.episodes()),
                         'seasons': len(media.seasons()) 
                                 }
-                    media_list.append(response)
+                        media_list.append(response)
 
                     if media and media.type == "movie":
-                        media_list = []
                         for part in media.iterParts():
                             media_info = {'guid': media.guid,
                                         'key': part.key,
@@ -423,16 +424,23 @@ class PlexSync(Base):
                                         'task': group_result.id}
                                         'section': media.librarySectionID,
                                         'title': media.title,
-                                        'folderPath': plexsync.createPathForMedia(media),
+                                        'folderPath': str(plexsync.createPathForMedia(media)),
                                         'fileName': plexsync.createFilenameForMedia(media)
                                         }
                             media_info["destination"] = os.path.join(
                                 media_info["folderPath"], media_info["fileName"])
-                            taskResult = self.download_media.delay(args=[media_info])
+                            self.log.warn(f"MediaINF: {media_info}")
+                            task = self.download_media.signature(args=[media_info])
+                            movie_list = []
+                            movie_list.append(task)
+                            job = group(movie_list)
+                            group_result = job.delay()
+                            group_result.save()
+                            
                             response = {'key': part.key,
                                         'guid': media.guid,
                                         'title': media.title,
-                                        'task': taskResult.id}
+                                        'task': group_result.id}
                             media_list.append(response)
 
                     return media_list
