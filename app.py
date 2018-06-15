@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+
 from plexsync.plexsync import PlexSync
 
 import json
@@ -58,7 +59,7 @@ def home():
 
 @app.route('/servers/<string:serverName>', methods=['GET','POST'])
 def sections(serverName):
-    print(f"routing for {serverName}")
+    app.logger.debug(f"routing for {serverName}")
     plexsync = PlexSync()
     plexsync.getAccount(session['username'], session['password'])
     server = plexsync.getServer(serverName)
@@ -70,7 +71,7 @@ def sections(serverName):
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 
 def media(serverName, section):
-    print(f"routing for {serverName} - {section}")
+    app.logger.debug(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
     plexsync.getAccount(session['username'], session['password'])
     
@@ -112,7 +113,7 @@ def download():
 def transfer():
     try:
         server = request.form['server']
-        section = request.form['section']
+        sectionID = request.form['section']
         guid = request.form['guid']
         guid = urllib.parse.unquote(guid)
         plexsync = PlexSync()
@@ -129,25 +130,40 @@ def transfer():
                 authorized = True
 
             theirServer = plexsync.getServer(server)
-            section = theirServer.library.sectionByID(section)
+            section = theirServer.library.sectionByID(sectionID)
             result = section.search(guid=guid).pop()
         if authorized:
             app.logger.debug("building task")
             try:
-              task_result = plexsync.transfer.delay(theirServer.friendlyName, guid)
+                transferred = plexsync.transfer(theirServer.friendlyName, sectionID, guid)
+                app.logger.debug(f"Transferred Results {transferred} Len: {len(transferred)}")
             except Exception as e:
-              app.logger.error(f"Exception {e}")
-              return json.dumps(e)
-            msg = f"Transferring {result.title} to {currentUserServer}"
-            response = {'key' : result.ratingKey, 'title': result.title, 'task': task_result.id } 
-            return jsonify(result=response, message=msg)
+                app.logger.exception(f"Exception {e}")
+                status = 500
+                response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+                response.status_code = status
+                return response
+            
+            msg = f"Transferring {len(transferred)} items to {currentUserServer}"
+            status = 202
+            response = jsonify(message = { "text" : msg, "severity" : "success" }, result=transferred, status=status)
+            response.status_code = status
+            return response
+        
         else:
             app.logger.debug(f"not authorized")
             msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
-            return json.dumps(msg)
+            status = 403
+            response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
+            response.status_code = status
+            return response
     except Exception as e:
-        return json.dumps(str(e))
-
+        app.logger.exception(f"Exception {e}")
+        status = 500
+        response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+        response.status_code = status
+        return response
+        
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionName=None):
@@ -169,7 +185,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
         for section in sectionsToCompare:
             yourLibrary = plexsync.getResults(yourServer, section)
             theirLibrary = plexsync.getResults(theirServer, section)
-            results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
+            results = plexsync.compareLibraries(yourLibrary, theirLibrary)
 
             app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
             app.logger.debug(f"{len(results)} your diff")
@@ -202,54 +218,37 @@ def compare(yourServerName, theirServerName, sectionName=None):
         return render_template('media.html', media=result_list)
     
 
-@app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
-def compareResults(yourServerName, theirServerName, sectionName=None):
-
-    plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
-    sectionsToCompare = []
-
-    if not sectionName:    
-        settings = plexsync.getSettings()
-        sectionsToCompare = settings.get('sections', 'sections').split(",")
-    else:
-        sectionsToCompare.append(sectionName)
-
-    yourServer = plexsync.getServer(yourServerName)
-    theirServer = plexsync.getServer(theirServerName)
-    
-    for section in sectionsToCompare:
-        yourLibrary = plexsync.getResults(yourServer, section)
-        theirLibrary = plexsync.getResults(theirServer, section)
-
-        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
-
-        print(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
-        print(f"{len(results)} your diff")
-
-        return json.dumps([r.title for r in results], ensure_ascii=False)
-
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
-    plexsync = PlexSync(taskOnly=True)
-    task = plexsync.getTask(task_id)
+    task = PlexSync.getTask(task_id)
+
+    if type(task) is dict: #This is a group task check, not a task object
+        response = jsonify(task)
+        response.status_code = 200
+        return response
+ 
     if task.state == 'PENDING':
-        # job did not start yet
+    # job did not start yet
         response = {
             'state': task.state,
             'current': 0,
             'total': 1,
             'status': 'Pending...'
         }
-    elif task.state != 'FAILURE':
+    elif task.state == 'SUCCESS':
         response = {
             'state': task.state,
             'current': task.info.get('current', 0),
             'total': task.info.get('total', 1),
             'status': task.info.get('status', '')
         }
-        if 'result' in task.info:
-            response['result'] = task.info['result']
+    elif task.state == 'PROGRESS':
+            response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+                'status': task.info.get('status', '')
+            }
     else:
         # something went wrong in the background job
         response = {
@@ -258,13 +257,17 @@ def taskstatus(task_id):
             'total': 1,
             'status': str(task.info),  # this is the exception raised
         }
+        app.logger.exception(repr(task.info))
+        response = jsonify(response)
+        response.status_code = 500 #set the error code so the ajax call knows it's a failure
+
     return jsonify(response)
 
 
 if __name__ == '__main__':
-    #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host    
+    #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.DEBUG)
 
     app.run(host='0.0.0.0', port=5000)
-    
+
