@@ -12,7 +12,8 @@ CMD ["app.py"]
 VOLUME /config
 VOLUME /downloads
 
-RUN apk update && apk add nodejs
+#build-base required for gcc, required for eventlet, required for websocket support
+RUN apk update && apk add nodejs build-base
 RUN npm install -g browserify notifyjs
 RUN npm link notifyjs
 
