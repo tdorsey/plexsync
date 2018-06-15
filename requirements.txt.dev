@@ -18,6 +18,7 @@ packaging==17.1
 pick==0.6.4
 PlexAPI==3.0.6
 pyparsing==2.2.0
+<<<<<<< HEAD
 python-engineio==2.2.0
 python-socketio==2.0.0
 pytz==2018.5

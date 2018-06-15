@@ -2,6 +2,8 @@ var $ = require('jquery');
 var notify = require('./notify-helper');
 var progress = require('./progress-helper');
 var message = require('./message-helper');
+var socket = require('./sockets');
+
 
 function onSelectSection(e) {
     var that = this;
@@ -50,10 +52,9 @@ function onSelectServer(e) {
         sectionSelect = $(".section");
         sectionSelect.empty();
         sectionSelect.append(new Option("Select a Section", null, true, true));
-
-        $.each(response, function (index, item) {
-            sectionSelect.append(new Option(item, item));
-        });
+        response.forEach(section => {
+            sectionSelect.append(new Option(section.name, section.name));
+        })
     }, 'json');
 }
 
@@ -61,18 +62,19 @@ function compareLibraries() {
     var serverA = $("#serverA").val();
     var serverB = $("#serverB").val();
     var section = $("#section").val();
+    var sectionKey = $("#section").val();
     $("#comparison_title").text(`${serverB} has the following new ${section}`);
     $("#comparison_results").empty();
-    var endpoint = '/compare/' + serverA + '/' + serverB + '/' + section;
-    fnBeforeSend = function (req) {
-        //If this is returned as json, flask doesn't render the media item as JSON safely. By accepting html, we ensure the template sanitizes it.
-        req.setRequestHeader("Accept", "text/html");
-    };
+    var endpoint = '/compare/' + serverA + '/' + serverB + '/' + sectionKey;
+    var compareRequest = $.ajax({ url: endpoint  }).done(
+        function (response) {
+          response.forEach(element => {
+              var message = { "server" : serverB, "section" : section, "guid" : element  };
+              socket.emit("render_template", message);
+            });
 
-    var compareRequest = $.ajax({ url: endpoint, beforeSend: fnBeforeSend }).done(
-        function (result) {
-            $("#comparison_results").append(result);
-            resizeMediaDivs();
+      //      $("#comparison_results").append(result);
+        //    resizeMediaDivs();
             $(".progress").closest(".card").toggle(false);
         }).fail(
             function (xhr, status, error) {
@@ -136,6 +138,7 @@ function transfer(item) {
         server: item.server,
         section: item.sectionID
     }
+
     return new Promise((resolve, reject) => {
         $.ajax({
             type: "POST",

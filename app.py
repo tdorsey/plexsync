@@ -2,6 +2,7 @@
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
+from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
 
 import json
@@ -15,12 +16,18 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
+socketio = SocketIO(app)
 
 def as_json():
+
+    if  request.args.get('json', None):
+        return True
+
+
 # If content type is application/json, return json, else render the template
- best = request.accept_mimetypes \
+    best = request.accept_mimetypes \
         .best_match(['application/json', 'text/html'])
- return best == 'application/json' and \
+    return best == 'application/json' and \
         request.accept_mimetypes[best] > \
         request.accept_mimetypes['text/html']
 
@@ -82,7 +89,12 @@ def sections(serverName):
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
 
-    sortedSections = sorted([section.title for section in sections])
+    section_list = []
+    
+    for section in sections:
+        result = {"id": section.key, "name": section.title, "type": section.type}
+        section_list.append(result)
+        sortedSections = sorted(section_list,key=lambda s: s.get("name"))
     return json.dumps(sortedSections, ensure_ascii=False)
 
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
@@ -182,22 +194,24 @@ def transfer():
         return response
         
 @app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
-@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
-def compare(yourServerName, theirServerName, sectionName=None):
+@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:section>', methods=['GET'])
+@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionKey>', methods=['GET'])
+def compare(yourServerName, theirServerName, sectionKey=None):
     try:
         plexsync = PlexSync()
         plexsync.getAccount(session['username'], session['password'])
-        sectionsToCompare = []
+        yourServer = plexsync.getServer(yourServerName)
+        theirServer = plexsync.getServer(theirServerName)
 
-        if not sectionName:
+        sectionsToCompare = []
+        if not sectionKey:
             settings = plexsync.getSettings()
             sectionsToCompare = settings.get('sections', 'sections').split(",")
         else:
-            sectionsToCompare.append(sectionName)
+            section = plexsync.getSection(theirServer, sectionKey)
+            sectionsToCompare.append(section.title)
 
-        yourServer = plexsync.getServer(yourServerName)
         session['yourServer'] = yourServerName
-        theirServer = plexsync.getServer(theirServerName)
 
         for section in sectionsToCompare:
             yourLibrary = plexsync.getResults(yourServer, section)
@@ -209,21 +223,7 @@ def compare(yourServerName, theirServerName, sectionName=None):
             result_list = []
 
             for r in results:
-
-                m = plexsync.getAPIObject(r)
-
-                result_dict = {}
-                result_dict['title'] = m.title
-                result_dict['downloadURL'] = m.downloadURL
-                result_dict['overview'] = m.overview
-                result_dict['sectionID'] = m.librarySectionID
-                result_dict['year'] = m.year
-                result_dict['guid'] = urllib.parse.quote_plus(m.guid)
-                result_dict['server'] = theirServer.friendlyName
-                if m.image and len(m.image) > 0:
-                    result_dict['image'] = m.image
-                result_dict['rating'] = m.rating
-                result_list.append(result_dict)
+                result_list.append(r.guid)
     except Exception as e:
         app.logger.exception(e)
         response = jsonify(str(e))
@@ -259,7 +259,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
         app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
         app.logger.debug(f"{len(results)} your diff")
 
-        return json.dumps([r.title for r in results], ensure_ascii=False)
+    return jsonify(results)
 
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
@@ -306,11 +306,47 @@ def taskstatus(task_id):
 
     return jsonify(response)
 
+def ack():
+    app.logger.warn('message was received!')
+
+@socketio.on('render_template', namespace='/plexsync')
+def plexsync_message(message):
+
+    server = message.get("server")
+    section = message.get("section")
+    guid = message.get("guid")
+
+    app.logger.warn(f"rending template for {guid}")
+    app.logger.warn(f"message: {message}")
+
+    plexsync = PlexSync()
+    app.logger.warn(f"ps: {str(plexsync)}")
+    plexsync.getAccount(session['username'], session['password'])
+    theirServer = plexsync.getServer(server)
+    section = plexsync.getSection(theirServer, section)
+    result = section.search(guid=guid).pop()
+    template_data = plexsync.prepareMediaTemplate(result)
+
+    html =  render_template('media.html', media=template_data)
+    socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+
+@socketio.on('broadcast', namespace='/plexsync')
+def plexsync_broadcast(message):
+    emit('my response', {'data': message['data']}, broadcast=True)
+
+@socketio.on('connect', namespace='/plexsync')
+def plexsync_connect():
+    app.logger.info('Client connected')
+    emit('my response', {'data': 'Connected'})
+
+@socketio.on('disconnect', namespace='/plexsync')
+def plexsync_disconnect():
+    app.logger.info('Client disconnected')
 
 if __name__ == '__main__':
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.DEBUG)
 
-    app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000)
 

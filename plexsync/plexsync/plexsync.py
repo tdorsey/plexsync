@@ -118,7 +118,7 @@ class PlexSync(Base):
         return server.library.sections()
 
     def getSection(self, server, section):
-        return filter(lambda x: x.name == section, server.library.sections())
+            return server.library.section(section)
 
     def getResult(self, sectionID, guid):
         section = self.server.library.sectionByID(sectionID)
@@ -128,7 +128,8 @@ class PlexSync(Base):
 
     def getResults(self, server, section):
         # guid does not exist in the xml response to it will reload once for each show.
-        return server.library.section(section).all()
+        result = server.library.section(section)
+        return result.all()
 
     def getMedia(self, server, section):
 
@@ -164,6 +165,23 @@ class PlexSync(Base):
         for m in media:
             m.fetchMissingData()
             m.provider.createEntry(m)
+
+    def prepareMediaTemplate(self, result):
+                m = self.getAPIObject(result)
+
+                result_dict = {}
+                result_dict['title'] = m.title
+                result_dict['downloadURL'] = m.downloadURL
+                result_dict['overview'] = m.overview
+                result_dict['sectionID'] = m.librarySectionID
+                result_dict['year'] = m.year
+                result_dict['guid'] = urllib.parse.quote_plus(m.guid)
+                result_dict['server'] = result._server.friendlyName
+                if m.image and len(m.image) > 0:
+                    result_dict['image'] = m.image
+                result_dict['rating'] = m.rating
+
+                return result_dict
 
     def compareLibraries(self, yourResults, theirResults):
         yourSet = set()
