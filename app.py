@@ -7,6 +7,7 @@ from plexsync.plexsync import PlexSync
 import json
 import urllib.parse
 import logging
+import requests
 import traceback
 import sys
 
@@ -46,14 +47,30 @@ def login():
     except Exception as e:
        return json.dumps(str(e))
 
-@app.route('/home', methods=['GET'])
-def home():
+@app.route('/home/<string:token>', methods=['GET'])
+def home(token):
    try:
         plexsync = PlexSync()
-        plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
+        if token:
+            plexAccount = plexsync.getAccount(token=token)
+        else:
+            plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
         servers = plexsync.getServers(plexAccount)
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
+   except KeyError:
+        return redirect('/')
+
+@app.route('/pin/<string:pinId>', methods=['GET'])
+def exchangePinForAuth(pinId):
+   try:
+     app.logger.debug(f"received pin id: {pinId}")
+     headers = {'X-Plex-Client-Identifier': 'plexsync'}
+     url = f"https://plex.tv/api/v2/pins/{pinId}.json"
+     r = requests.get(url=url, headers=headers )
+     token = r.json()['authToken']
+     app.logger.debug(f"Got auth token {token}")
+     return redirect(url_for('home', token=token))
    except KeyError:
         return redirect('/')
 
