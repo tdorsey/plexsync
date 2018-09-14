@@ -439,7 +439,26 @@ class PlexSync(Base):
                             response = {'key': part.key,
                                         'guid': media.guid,
                                         'title': media.title,
-                                        'task': group_result.id}
+                                        'task': group_result.id,
+                                        'section': media.librarySectionID,
+                                        'title': media.title,
+                                        'folderPath': str(plexsync.createPathForMedia(media)),
+                                        'fileName': plexsync.createFilenameForMedia(media)
+                                        }
+                            media_info["destination"] = os.path.join(
+                                media_info["folderPath"], media_info["fileName"])
+                            self.log.warn(f"MediaINF: {media_info}")
+                            task = self.download_media.signature(args=[media_info])
+                            movie_list = []
+                            movie_list.append(task)
+                            job = group(movie_list)
+                            group_result = job.delay()
+                            group_result.save()
+                            
+                            response = {'key': part.key,
+                                        'guid': media.guid,
+                                        'title': media.title,
+                                        'task': group_result.id,
                                         'section': media.librarySectionID,
                                         'title': media.title,
                                         'folderPath': str(plexsync.createPathForMedia(media)),
