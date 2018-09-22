@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from datetime import timedelta
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
+
+from plexsync.tasks import *  
 
 import json
 import urllib.parse
@@ -16,6 +19,11 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
+app.config['DEBUG'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
+app.config['CELERY_BROKER_URL'] = 'pyamqp://rabbitmq:rabbitmq@rabbitmq'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
+
 socketio = SocketIO(app)
 
 def as_json():
@@ -49,19 +57,21 @@ def login():
 
     try:
         plexsync = PlexSync()
-        plexsync.getAccount(session['username'], session['password'])
+        plexsync.getAccount()
         return redirect(url_for('home', _scheme='https', _external=True), code=303)
     except Exception as e:
        return json.dumps(str(e))
 
-@app.route('/home/<string:token>', methods=['GET'])
-def home(token):
+@app.route('/home', methods=['GET'])
+def home():
    try:
+        token = session['token']
+        session.permanent = True
         plexsync = PlexSync()
         if token:
             plexAccount = plexsync.getAccount(token=token)
         else:
-            plexAccount = plexsync.getAccount(username=session['username'], password=session['password'])
+            plexAccount = plexsync.getAccount()
         servers = plexsync.getServers(plexAccount)
         sortedServers = sorted([server.name for server in servers])
         return render_template('home.html', server_list=sortedServers)   
@@ -76,8 +86,9 @@ def exchangePinForAuth(pinId):
      url = f"https://plex.tv/api/v2/pins/{pinId}.json"
      r = requests.get(url=url, headers=headers )
      token = r.json()['authToken']
+     session['token'] = token
      app.logger.debug(f"Got auth token {token}")
-     return redirect(url_for('home', token=token))
+     return redirect(url_for('home'))
    except KeyError:
         return redirect('/')
 
@@ -85,7 +96,7 @@ def exchangePinForAuth(pinId):
 def sections(serverName):
     app.logger.debug(f"routing for {serverName}")
     plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount()
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
 
@@ -102,7 +113,7 @@ def sections(serverName):
 def media(serverName, section):
     app.logger.debug(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount()
     
     server = plexsync.getServer(serverName)
     results = plexsync.getResults(server, section)
@@ -117,7 +128,7 @@ def search():
     server = request.form['server']
     section = request.form['section']
     plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount()
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
@@ -132,7 +143,7 @@ def download():
     server = request.form['server']
     section = request.form['section']
     plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount()
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
     result = section.search(guid=guid).pop()
@@ -146,7 +157,7 @@ def transfer():
         guid = request.form['guid']
         guid = urllib.parse.unquote(guid)
         plexsync = PlexSync()
-        plexsync.getAccount(session['username'], session['password'])
+        plexsync.getAccount()
 
         ownedServers = plexsync.getOwnedServers()
         currentUserServer = session['yourServer']
@@ -199,40 +210,38 @@ def transfer():
 def compare(yourServerName, theirServerName, sectionKey=None):
     try:
         plexsync = PlexSync()
-        plexsync.getAccount(session['username'], session['password'])
+        plexsync.getAccount()
         yourServer = plexsync.getServer(yourServerName)
         theirServer = plexsync.getServer(theirServerName)
 
-        sectionsToCompare = []
-        if not sectionKey:
-            settings = plexsync.getSettings()
-            sectionsToCompare = settings.get('sections', 'sections').split(",")
-        else:
-            section = plexsync.getSection(theirServer, sectionKey)
-            sectionsToCompare.append(section.title)
+        section = plexsync.getSection(theirServer, sectionKey)
+        sectionName = section.title
 
         session['yourServer'] = yourServerName
+        message = { "yourServer" : yourServerName,
+                    "theirServer" : theirServerName,
+                    "section" : sectionName  }
+        app.logger.debug("compare route hit")
 
-        for section in sectionsToCompare:
-            yourLibrary = plexsync.getResults(yourServer, section)
-            theirLibrary = plexsync.getResults(theirServer, section)
-            results = plexsync.compareLibraries(yourLibrary, theirLibrary)
 
-            app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
-            app.logger.debug(f"{len(results)} your diff")
-            result_list = []
+        app.logger.warning(f"{message}")
+        signature = compare_task.s()
+        task = signature.apply_async(args=[message])
+        app.logger.debug(f" result backend {task.backend}")
+        app.logger.debug(f"Compare Task: {task} ")
+      
+        message["task"] = task.id
+        return jsonify(message)
 
-            for r in results:
-                result_list.append(r.guid)
     except Exception as e:
         app.logger.exception(e)
         response = jsonify(str(e))
         response.status_code = 500
         return response
-    if as_json():
-        return jsonify(result_list)
-    else:
-        return render_template('media.html', media=result_list)
+    #if as_json():
+    #return jsonify(result_list)
+    #else:
+     #   return render_template('media.html', media=result_list)
 
 @app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
@@ -263,72 +272,103 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
-    task = PlexSync.getTask(task_id)
-
-    if type(task) is dict: #This is a group task check, not a task object
-        response = jsonify(task)
-        response.status_code = 200
-        return response
-
-    if task.state == 'PENDING':
-    # job did not start yet
-        response = {
-            'state': task.state,
-            'current': 0,
-            'total': 1,
-            'status': 'Pending...'
-        }
-    elif task.state == 'SUCCESS':
-        response = {
-            'state': task.state,
-            'current': task.info.get('current', 0),
-            'total': task.info.get('total', 1),
-            'status': task.info.get('status', '')
-        }
-    elif task.state == 'PROGRESS':
-            response = {
-            'state': task.state,
-            'current': task.info.get('current', 0),
-            'total': task.info.get('total', 1),
-                'status': task.info.get('status', '')
-            }
-    else:
-        # something went wrong in the background job
-        response = {
-            'state': task.state,
-            'current': 1,
-            'total': 1,
-            'status': str(task.info),  # this is the exception raised
-        }
-        app.logger.exception(repr(task.info))
-        response = jsonify(response)
-        response.status_code = 500 #set the error code so the ajax call knows it's a failure
-
-    return jsonify(response)
+    task = getTaskProgress(task_id)
+    return jsonify(task)
 
 def ack():
-    app.logger.warn('message was received!')
+    app.logger.warning('message was received!')
 
-@socketio.on('render_template', namespace='/plexsync')
-def plexsync_message(message):
-
+def render_and_emit(message):
+    
     server = message.get("server")
     section = message.get("section")
     guid = message.get("guid")
 
-    app.logger.warn(f"rending template for {guid}")
-    app.logger.warn(f"message: {message}")
-
     plexsync = PlexSync()
-    app.logger.warn(f"ps: {str(plexsync)}")
-    plexsync.getAccount(session['username'], session['password'])
+    plexsync.getAccount()
     theirServer = plexsync.getServer(server)
     section = plexsync.getSection(theirServer, section)
     result = section.search(guid=guid).pop()
     template_data = plexsync.prepareMediaTemplate(result)
 
-    html =  render_template('media.html', media=template_data)
+    with app.app_context():
+        html = render_template('media.html', media=template_data)
+
     socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+
+def getGroupProgress(taskID):
+        task_group = celery.GroupResult.restore(taskID)
+        with open("/app/info.txt", "w") as file:
+
+            file.write(f"{task_group}\n\n")
+
+            group_total = 0
+            group_current = 0
+            for t in task_group.results:
+#                file.write(f"Task ID: {t.id} - task state: {t.state}\n\n")
+#                file.write(f"task info: {t.info}\n\n")
+                status = str(t.info) or t.state
+
+                if t.state in ["FAILURE", "PENDING"]:
+                    meta = {'current': 0, 'status': status, 'total': 1}
+                    continue
+                else:
+                    task_current = t.info.get('current', 0)
+                    task_total = t.info.get('total', 1)
+
+                    group_current += task_current
+                    group_total += task_total
+                    file.write(f"@@@{group_current}@@@\n***{group_total}***\n")
+        
+                    meta = {'current': group_current,
+                            'status': 'PROGRESS',
+                            'total': group_total}
+                    file.write(f'{t.id}-{t.state.upper()}: {meta["current"]} of {meta["total"]}: {int(meta["current"] / meta["total"])}\n')
+            return meta 
+
+def getGroupProgress(taskID):
+        task_group = celery.GroupResult.restore(taskID)
+        with open("/app/info.txt", "w") as file:
+
+            file.write(f"{task_group}\n\n")
+
+            group_total = 0
+            group_current = 0
+            for t in task_group.results:
+#                file.write(f"Task ID: {t.id} - task state: {t.state}\n\n")
+#                file.write(f"task info: {t.info}\n\n")
+                status = str(t.info) or t.state
+
+                if t.state in ["FAILURE", "PENDING"]:
+                    meta = {'current': 0, 'status': status, 'total': 1}
+                    continue
+                else:
+                    task_current = t.info.get('current', 0)
+                    task_total = t.info.get('total', 1)
+
+                    group_current += task_current
+                    group_total += task_total
+                    file.write(f"@@@{group_current}@@@\n***{group_total}***\n")
+        
+                    meta = {'current': group_current,
+                            'status': 'PROGRESS',
+                            'total': group_total}
+                    file.write(f'{t.id}-{t.state.upper()}: {meta["current"]} of {meta["total"]}: {int(meta["current"] / meta["total"])}\n')
+            return meta
+
+@socketio.on('comparison_done', namespace='/plexsync')
+def plexsync_message(message):
+   app.logger.debug(f"comparison re emitted {message}")
+
+
+@socketio.on('render_template', namespace='/plexsync')
+def plexsync_message(message):
+    app.logger.info(f"rendering template for {message.get('guid')}")
+    app.logger.debug(f"message: {message}")
+
+    plexsync = PlexSync()
+    plexsync.render(message)
+    #socketio.start_background_task(render_and_emit, message)
 
 @socketio.on('broadcast', namespace='/plexsync')
 def plexsync_broadcast(message):

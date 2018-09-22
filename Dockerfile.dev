@@ -1,4 +1,4 @@
-FROM python:3-alpine3.7
+FROM python:3.6-alpine3.6
 
 USER root
 WORKDIR /app
@@ -23,11 +23,10 @@ VOLUME /logs
 VOLUME /downloads
 WORKDIR /app
 
-COPY entrypoint.sh /
 COPY config/config.ini /config
 
 #build base >> gcc >> eventlet >> websockets
-RUN apk update && apk add nodejs python3 git nano build-base
+RUN apk update && apk add nodejs-npm python3 git nano build-base
 
 RUN npm install -g npm@latest
 RUN npm install -g browserify 
@@ -46,6 +45,7 @@ COPY package.json /app
 COPY package.json .
 RUN npm install --save
 
+COPY entrypoint.sh /
 COPY app.py .
 
 COPY /static  ./static

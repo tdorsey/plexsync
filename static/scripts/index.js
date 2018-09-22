@@ -9,7 +9,7 @@ $(document).ready(function(){
 
 		login.getToken().then( function(token) {
 			console.log(token);
-			window.open(token.url);
+			window.location.href = token.url;
 		});
 	});
 

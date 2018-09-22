@@ -17,13 +17,14 @@ def dump(obj):
         if hasattr(obj, attr):
             print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
-def getAccount(username=None, password=None, token=None):
+def getAccount(self, username=None, password=None, token=None):
             if token:
-              return MyPlexAccount(token=token) 
+              self.account = MyPlexAccount(token=token) 
             else:
                username = username or configParser.get("auth", "myplex_username")
                password = password or configParser.get("auth", "myplex_password")
-               return MyPlexAccount(username, password)
+               self.account = MyPlexAccount(username, password)
+            return self.account
 
 
 CONFIG_PATH = str(os.path.join('/config', 'config.ini'))
@@ -38,7 +39,7 @@ class Base:
     def __init__(self):
             self.settings = configParser
             self.log = log
-            self.account = getAccount()
+            self.account = getAccount(self)
 
     def getSettings(self):
         return settings

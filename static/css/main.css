@@ -42,12 +42,12 @@ html, body {height:100%}
     vertical-align: middle;
     padding: 5px;
     background-image : images/plex-logo.png;
-    max-width: 60%;
-    max-height: 126%;
+    max-width: 25%;
+    object-fit: scale-down;
 }
 
 #plex-oauth {
-    width: 25%;
+    max-width: 7%;
 }
 
 

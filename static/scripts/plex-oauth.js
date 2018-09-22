@@ -8,6 +8,28 @@ const DEVICE_PLATFORM = "Linux"
 const PRODUCT_VERSION = "develop"
 const PLATFORM_VERSION  = "4.9.0-7-amd64"
 
+let htest = {
+"X-PLEX-PROVIDES" : "1",
+"X-PLEX-PLATFORM" : "2",
+"X-PLEX-PLATFORM-VERSION" : "3",
+"X-PLEX-PRODUCT" : "4",
+"X-PLEX-VERSION" : "5",
+"X-PLEX-DEVICE" : "6",
+"X-PLEX-DEVICE-NAME" : "7",
+"X-PLEX-CLIENT-IDENTIFIER" : "8"
+};
+
+let hworking = { "X-Plex-Client-Identifier" : "plexsync"};
+
+let hcontext = {
+'context[device][environment]': 11,
+'context[device][layout]' : 12,
+'context[device][product]' :13,
+'context[device][platform]': 14,
+'context[device][device]': 15
+};
+
+
 
 let code = null;
 let pin = null;
@@ -18,9 +40,7 @@ const result = await $.ajax({
     url: PLEX_CREATE_PIN_URL,
     type: 'post',
     data: null,
-    headers: {
-        "X-Plex-Client-Identifier": clientId
-    },
+    headers: hworking,
     dataType: 'json',
     always: function (data) {
         console.log(data) 

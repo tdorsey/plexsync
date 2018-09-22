@@ -66,28 +66,13 @@ function compareLibraries() {
     $("#comparison_title").text(`${serverB} has the following new ${section}`);
     $("#comparison_results").empty();
     var endpoint = '/compare/' + serverA + '/' + serverB + '/' + sectionKey;
-    var compareRequest = $.ajax({ url: endpoint  }).done(
-        function (response) {
-          response.forEach(element => {
-              var message = { "server" : serverB, "section" : section, "guid" : element  };
-              socket.emit("render_template", message);
-            });
-
-      //      $("#comparison_results").append(result);
-        //    resizeMediaDivs();
-            $(".progress").closest(".card").toggle(false);
-        }).fail(
+    var compareRequest = $.ajax({ url: endpoint  }).done(function(response) {
+	console.log(response);
+	}
+	).fail(
             function (xhr, status, error) {
                 msg = `${xhr.status}: ${xhr.responseText}`;
                 message.danger(msg);
-                message.success(msg);
-                message.info(msg);
-                message.warning(msg);
-                message.primary(msg);
-                message.secondary(msg);
-                message.dark(msg);
-                message.light(msg);
-
             });
 
 }
