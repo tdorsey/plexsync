@@ -19,6 +19,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'changeme'
 app.config['LOGGER_NAME'] = 'plexsync'
+app.config['SERVER_NAME'] = 'ps.rtd3.me'
 app.config['DEBUG'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
 app.config['CELERY_BROKER_URL'] = 'pyamqp://rabbitmq:rabbitmq@rabbitmq'
@@ -49,6 +50,17 @@ def index():
         # this assumes that the 'index' view function handles the path '/'
         request.script_root = url_for('index', _external=True)
     return render_template('index.html')
+
+@app.route('/notify', methods=['GET', 'POST'])
+def notify():
+        app.logger.debug("***notify hit***")
+        app.logger.debug(f"form data: {request.form}"  )
+        fields = [k for k in request.form]                                      
+        values = [request.form[k] for k in request.form]
+        data = dict(zip(fields, values))
+        socketio.emit("comparison_done", {'message' : data }, namespace='/plexsync')
+        app.logger.debug(f"{data}")
+        return jsonify(data) 
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -383,7 +395,37 @@ def plexsync_connect():
 def plexsync_disconnect():
     app.logger.info('Client disconnected')
 
+
+def make_celery(app):
+    celery = Celery(
+        app.import_name,
+        backend=app.config['CELERY_RESULT_BACKEND'],
+        broker=app.config['CELERY_BROKER_URL'],
+        include='plexsync.tasks'
+    )
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+        def on_failure(self, exc, task_id, args, kwargs, einfo):
+            kwargs={}
+            kwargs['exc_info']=exc
+            log.error('Task % failed to execute', task_id, **kwargs)
+            super().on_failure(exc, task_id, args, kwargs, einfo)
+
+        def after_return(self, status, retval, task_id, args, kwargs, einfo):
+            app.logger.debug(f"after return {self}")
+            url = 'http://localhost:5000/notify'
+            data = {'clientid': kwargs['clientid'], 'result': retval}
+            requests.post(url, data=data)
+
+    celery.Task = ContextTask
+    return celery
+
 if __name__ == '__main__':
+    celery = make_celery(app)
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.DEBUG)

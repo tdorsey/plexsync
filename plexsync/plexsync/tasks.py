@@ -6,10 +6,13 @@ from celery.contrib import rdb
 from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
 from app import app as flask_app
+from flask import url_for
+
 import json
 import logging
+import requests
 
-#Wsocketio = SocketIO(message_queue=flask_app.config['CELERY_RESULT_BACKEND'], async_mode='threading', debug=True)
+
 log = logging.getLogger('plexsync')
 
 def make_celery(app):
@@ -30,9 +33,34 @@ def make_celery(app):
             log.error('Task % failed to execute', task_id, **kwargs)
             super().on_failure(exc, task_id, args, kwargs, einfo)
 
-#    celery.Task = ContextTask
+        def after_return(self, status, retval, task_id, args, kwargs, einfo):
+            log.warn(f"after return self: {self}")
+            log.warn(f"after return status {status}")
+            log.warn(f"after return retval {retval}")
+            log.warn(f"after return task_id {task_id}")
+            log.warn(f"after return args {args}")
+            log.warn(f"after return kwargs {kwargs}")
+            log.warn(f"after return einfo {einfo}")
+
+            data = {'result': retval}
+            url3 = 'https://plexsync:5000/notify'
+             
+
+
+            with app.app_context():
+                socketio.emit('comparison_done', {'html': retval}, namespace='/plexsync')
+#                urls = { 
+ #                        "u3" : "http://localhost:5000/notify",
+  #                       "u4" : "http://plexsync:5000/notify" 
+   #                     }
+          #      for k,v in urls.items():
+          #          log.warning(f"k is {k}\n\n v is {v}")
+          #          r = requests.post(v, data)
+          #          log.warning(f"response is {r.text}")
+    celery.Task = ContextTask
     return celery
 
+socketio = SocketIO(app=flask_app, debug=True)
 celery = make_celery(flask_app)
 
 #log.warning(f"celery: {celery.conf}")
@@ -388,6 +416,8 @@ def compare_task(message,bind=True, throw=True):
         message = { "server" : theirServerName, "section" : sectionName, "items" : guids }
         logging.warning("Emitting comparison_done") 
         logging.warning(f" with {message}")
+        return message
+ 
         rabbit_queue = 'amqp://rabbitmq:rabbitmq@rabbitmq'
         rabbit_queue2 = 'amqp://rabbitmq:rabbitmq@rabbitmq'
         redis_queue = 'redis://redis:6379/4'
@@ -398,3 +428,5 @@ def compare_task(message,bind=True, throw=True):
         eventlet_socket.emit('comparison_done', {'message' : 'test'}, namespace='/plexsync', broadcast=True)
         threaded_socket.emit('comparison_done', 'test', namespace='/plexsync')
         eventlet_socket.emit('comparison_done', 'test', namespace='/plexsync')
+
+      

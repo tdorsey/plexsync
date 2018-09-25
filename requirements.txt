@@ -6,7 +6,7 @@ celery==4.2.1
 certifi==2018.8.24
 chardet==3.0.4
 click==6.7
-eventlet==0.24.1
+eventlet==0.17.4
 Flask==1.0.2
 Flask-SocketIO==3.0.1
 greenlet==0.4.14
@@ -30,5 +30,6 @@ urllib3==1.23
 vine==1.1.4
 websocket-client==0.51.0
 Werkzeug==0.14.1
+pur>-0.1
 file:///app/plexsync#egg=PlexSync
 
