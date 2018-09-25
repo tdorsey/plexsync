@@ -5,66 +5,16 @@ from celery import Celery
 from celery.contrib import rdb
 from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
-from app import app as flask_app
-from flask import url_for
 
 import json
 import logging
 import requests
 
+from . import create_app, make_celery, socketio
 
+app = create_app(main=False)
+celery = make_celery()
 log = logging.getLogger('plexsync')
-
-def make_celery(app):
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL'],
-        include='plexsync.tasks'
-    )
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-        def on_failure(self, exc, task_id, args, kwargs, einfo):
-            kwargs={}
-            kwargs['exc_info']=exc
-            log.error('Task % failed to execute', task_id, **kwargs)
-            super().on_failure(exc, task_id, args, kwargs, einfo)
-
-        def after_return(self, status, retval, task_id, args, kwargs, einfo):
-            log.warn(f"after return self: {self}")
-            log.warn(f"after return status {status}")
-            log.warn(f"after return retval {retval}")
-            log.warn(f"after return task_id {task_id}")
-            log.warn(f"after return args {args}")
-            log.warn(f"after return kwargs {kwargs}")
-            log.warn(f"after return einfo {einfo}")
-
-            data = {'result': retval}
-            url3 = 'https://plexsync:5000/notify'
-             
-
-
-            with app.app_context():
-                socketio.emit('comparison_done', {'html': retval}, namespace='/plexsync')
-#                urls = { 
- #                        "u3" : "http://localhost:5000/notify",
-  #                       "u4" : "http://plexsync:5000/notify" 
-   #                     }
-          #      for k,v in urls.items():
-          #          log.warning(f"k is {k}\n\n v is {v}")
-          #          r = requests.post(v, data)
-          #          log.warning(f"response is {r.text}")
-    celery.Task = ContextTask
-    return celery
-
-socketio = SocketIO(app=flask_app, debug=True)
-celery = make_celery(flask_app)
-
-#log.warning(f"celery: {celery.conf}")
-
 
 def getTaskProgress(taskID):
       task = celery.AsyncResult(taskID)
@@ -248,126 +198,6 @@ def download_media(self, media_info):
                                         'totalTimeMS' : totalTimeMS
                            }
                         self.update_state(state='SUCCESS', meta=meta)
-                    return meta 
-
-@celery.task(bind=True)
-def download_media(self, media_info):
-        with open("/app/transfer.txt", "w") as file:
-            file.write("hi bob")
-            file.write(str(self))
-            file.write(str(media_info))
-            plexsync = PlexSync()
-            guid = media_info.get("guid")
-            serverName = media_info.get("server")
-            sectionID = media_info.get("section")
-            season = media_info.get("season")
-            episode = media_info.get("episode")
-            key =  media_info.get("key")
-            ratingKey = media_info.get("ratingKey")
-            for k,v in media_info.items():
-                file.write(f"Key: {k} - Value: {v}\n")
-            server = plexsync.getServer(serverName)
-            file.write(f"{str(server)}\n")
-            file.write(f"{sectionID}")
-
-            section = server.library.sectionByID(str(sectionID))
-
-            if section.type == "show":
-                results = section.searchEpisodes(guid=guid).pop()
-            elif section.type == "movie":
-                results = [section.search(guid=guid).pop()]
-                file.write(f"{len(results)}")
-            media = next(iter(results), None)
-            file.write(f"{len(results)} Results found\n")
-            file.write(f"sectionkey = {section.key} {section.type}\n")
-            file.write(f"{media} Media\n")
-
-            plexsync = PlexSync()
-            guid = media_info.get("guid")
-            serverName = media_info.get("server")
-            sectionID = media_info.get("section")
-            season = media_info.get("season")
-            episode = media_info.get("episode")
-            key =  media_info.get("key")
-            ratingKey = media_info.get("ratingKey")
-            for k,v in media_info.items():
-                file.write(f"Key: {k} - Value: {v}\n")
-            server = plexsync.getServer(serverName)
-            file.write(f"{str(server)}\n")
-            file.write(f"{sectionID}")
-
-            section = server.library.sectionByID(str(sectionID))
-            
-            if section.type == "show":
-                results = section.searchEpisodes(guid=guid).pop()
-            elif section.type == "movie":
-                results = [section.search(guid=guid).pop()]
-                file.write(f"{len(results)}")
-            media = next(iter(results), None)
-
-            file.write(f"{len(results)} Results found\n")
-            file.write(f"sectionkey = {section.key} {section.type}\n")
-            file.write(f"{media} Media\n")
-            for part in media.iterParts():
-                url = media._server.url(
-                    f"{part.key}?download=1", includeToken=True)
-
-                token = media._server._token
-                headers = {'X-Plex-Token': token}
-
-                response = media._server._session.get(
-                    url, headers=headers, stream=True)
-                total = int(response.headers.get('content-length', 0))
-
-                chunksize = 4096
-                chunks = math.ceil(total / chunksize)
-                currentChunk = 0
-
-                with open(media_info["destination"], 'wb') as handle:
-                    start = time.time()
-                    status = {      "current": 0,
-                                    "total": total,
-                                    "start": start,
-                                    "status": "starting"
-                                }
-                   # iterationElapsed = time.time() - status_info["start"]
-                   # bytesPerSecond = math.floor(chunksize / iterationElapsed)
-                   # etaSeconds = math.floor(int(status_info["bytes"]) / bytesPerSecond)
-                    #status = {  "bytesPerSecond": bytesPerSecond,
-                    #            "iterationElapsed": iterationElapsed,
-                    #            "iterationStartTime": status_info["start"],
-                    #            "etaSeconds": etaSeconds
-                    #        }
-                    meta = {'current': 0,
-                            'status': "getting started",
-                            'total': 1}
-
-                    self.update_state(state='STARTING', meta=meta)
-
-                    for chunk in response.iter_content(chunk_size=chunksize):
-                        handle.write(chunk)
-                                #iterationElapsed = time.time() - start
-                                #bytesPerSecond = math.floor(chunksize / iterationElapsed)
-                                #etaSeconds = math.floor(int(status_info["bytes"]) / bytesPerSecond)
-                                #currentByte = currentChunk * chunksize
-                                #status = {  "bytesPerSecond": bytesPerSecond,
-                                #            "iterationElapsed": iterationElapsed,
-                                #            "iterationStartTime": status_info["start"],
-                                #            "etaSeconds": etaSeconds
-                        meta = {        'current': currentChunk,
-                                        'status': f"{round(currentChunk / total)}%",
-                                        'total': chunks }
-
-                        self.update_state(state='DOWNLOAD', meta=meta)
-                        currentChunk += 1
-                        totalTimeMS = time.time() - start
-                        status = f'{media_info["title"]} Downloaded'
-                        meta = {    'current': currentChunk,
-                                        'status': status,
-                                        'total': chunks,
-                                        'totalTimeMS' : totalTimeMS
-                           }
-                        self.update_state(state='SUCCESS', meta=meta)
 
                     return meta
 
@@ -390,11 +220,6 @@ def render_task(message):
             celery_log.debug("Emitting template_rendered") 
             socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
 
-
-
-
-
-
 @celery.task()
 def compare_task(message,bind=True, throw=True):
         plexsync = PlexSync()
@@ -416,6 +241,8 @@ def compare_task(message,bind=True, throw=True):
         message = { "server" : theirServerName, "section" : sectionName, "items" : guids }
         logging.warning("Emitting comparison_done") 
         logging.warning(f" with {message}")
+
+        socketio.emit('comparison_done', {'message' : message}, namespace='/plexsync', broadcast=True)
         return message
  
         rabbit_queue = 'amqp://rabbitmq:rabbitmq@rabbitmq'

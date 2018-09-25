@@ -5,8 +5,9 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 
 from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
+from . import create_app, make_celery, socketio
 
-from plexsync.tasks import *  
+from plexsync.tasks import getTaskProgress  
 
 import json
 import urllib.parse
@@ -15,34 +16,17 @@ import requests
 import traceback
 import sys
 
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = 'changeme'
-app.config['LOGGER_NAME'] = 'plexsync'
-app.config['SERVER_NAME'] = 'ps.rtd3.me'
-app.config['DEBUG'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
-app.config['CELERY_BROKER_URL'] = 'pyamqp://rabbitmq:rabbitmq@rabbitmq'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
-
-socketio = SocketIO(app)
+plexsync = None
 
 def as_json():
-
-    if  request.args.get('json', None):
-        return True
-
-
 # If content type is application/json, return json, else render the template
-    best = request.accept_mimetypes \
-        .best_match(['application/json', 'text/html'])
-    return best == 'application/json' and \
-        request.accept_mimetypes[best] > \
-        request.accept_mimetypes['text/html']
-
-
-
-plexsync = None
+    # best = request.accept_mimetypes \
+    #     .best_match(['application/json', 'text/html'])
+    # return best == 'application/json' and \
+    #     request.accept_mimetypes[best] > \
+    #     request.accept_mimetypes['text/html']
+    if  request.args.get('json', None):
+         return True
 
 @app.route('/')
 def index():
@@ -121,7 +105,6 @@ def sections(serverName):
     return json.dumps(sortedSections, ensure_ascii=False)
 
 @app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
-
 def media(serverName, section):
     app.logger.debug(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
@@ -284,7 +267,7 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
 @app.route('/task/<task_id>')
 def taskstatus(task_id):
-    task = getTaskProgress(task_id)
+    task = tasks.getTaskProgress(task_id)
     return jsonify(task)
 
 def ack():
@@ -308,123 +291,11 @@ def render_and_emit(message):
 
     socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
 
-def getGroupProgress(taskID):
-        task_group = celery.GroupResult.restore(taskID)
-        with open("/app/info.txt", "w") as file:
-
-            file.write(f"{task_group}\n\n")
-
-            group_total = 0
-            group_current = 0
-            for t in task_group.results:
-#                file.write(f"Task ID: {t.id} - task state: {t.state}\n\n")
-#                file.write(f"task info: {t.info}\n\n")
-                status = str(t.info) or t.state
-
-                if t.state in ["FAILURE", "PENDING"]:
-                    meta = {'current': 0, 'status': status, 'total': 1}
-                    continue
-                else:
-                    task_current = t.info.get('current', 0)
-                    task_total = t.info.get('total', 1)
-
-                    group_current += task_current
-                    group_total += task_total
-                    file.write(f"@@@{group_current}@@@\n***{group_total}***\n")
-        
-                    meta = {'current': group_current,
-                            'status': 'PROGRESS',
-                            'total': group_total}
-                    file.write(f'{t.id}-{t.state.upper()}: {meta["current"]} of {meta["total"]}: {int(meta["current"] / meta["total"])}\n')
-            return meta 
-
-def getGroupProgress(taskID):
-        task_group = celery.GroupResult.restore(taskID)
-        with open("/app/info.txt", "w") as file:
-
-            file.write(f"{task_group}\n\n")
-
-            group_total = 0
-            group_current = 0
-            for t in task_group.results:
-#                file.write(f"Task ID: {t.id} - task state: {t.state}\n\n")
-#                file.write(f"task info: {t.info}\n\n")
-                status = str(t.info) or t.state
-
-                if t.state in ["FAILURE", "PENDING"]:
-                    meta = {'current': 0, 'status': status, 'total': 1}
-                    continue
-                else:
-                    task_current = t.info.get('current', 0)
-                    task_total = t.info.get('total', 1)
-
-                    group_current += task_current
-                    group_total += task_total
-                    file.write(f"@@@{group_current}@@@\n***{group_total}***\n")
-        
-                    meta = {'current': group_current,
-                            'status': 'PROGRESS',
-                            'total': group_total}
-                    file.write(f'{t.id}-{t.state.upper()}: {meta["current"]} of {meta["total"]}: {int(meta["current"] / meta["total"])}\n')
-            return meta
-
-@socketio.on('comparison_done', namespace='/plexsync')
-def plexsync_message(message):
-   app.logger.debug(f"comparison re emitted {message}")
 
 
-@socketio.on('render_template', namespace='/plexsync')
-def plexsync_message(message):
-    app.logger.info(f"rendering template for {message.get('guid')}")
-    app.logger.debug(f"message: {message}")
-
-    plexsync = PlexSync()
-    plexsync.render(message)
-    #socketio.start_background_task(render_and_emit, message)
-
-@socketio.on('broadcast', namespace='/plexsync')
-def plexsync_broadcast(message):
-    emit('my response', {'data': message['data']}, broadcast=True)
-
-@socketio.on('connect', namespace='/plexsync')
-def plexsync_connect():
-    app.logger.info('Client connected')
-    emit('my response', {'data': 'Connected'})
-
-@socketio.on('disconnect', namespace='/plexsync')
-def plexsync_disconnect():
-    app.logger.info('Client disconnected')
-
-
-def make_celery(app):
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL'],
-        include='plexsync.tasks'
-    )
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-        def on_failure(self, exc, task_id, args, kwargs, einfo):
-            kwargs={}
-            kwargs['exc_info']=exc
-            log.error('Task % failed to execute', task_id, **kwargs)
-            super().on_failure(exc, task_id, args, kwargs, einfo)
-
-        def after_return(self, status, retval, task_id, args, kwargs, einfo):
-            app.logger.debug(f"after return {self}")
-            url = 'http://localhost:5000/notify'
-            data = {'clientid': kwargs['clientid'], 'result': retval}
-            requests.post(url, data=data)
-
-    celery.Task = ContextTask
-    return celery
 
 if __name__ == '__main__':
+    app = create_app(main=True)
     celery = make_celery(app)
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
