@@ -1,20 +1,18 @@
 
 from __future__ import absolute_import, unicode_literals
 
-from celery import Celery
-from celery.contrib import rdb
-from flask_socketio import SocketIO, emit
 from plexsync.plexsync import PlexSync
 
 import json
 import logging
 import requests
 
-from . import create_app, make_celery, socketio
+from .factory import create_app, make_celery, make_socketio, get_logger
 
-app = create_app(main=False)
-celery = make_celery()
-log = logging.getLogger('plexsync')
+floobaz = create_app()
+celery = make_celery(floobaz, main=False)
+socketio = make_socketio(floobaz, main=False)
+log = get_logger(floobaz)
 
 def getTaskProgress(taskID):
       task = celery.AsyncResult(taskID)
@@ -239,21 +237,19 @@ def compare_task(message,bind=True, throw=True):
         results = plexsync.compareLibraries(yourLibrary, theirLibrary)
         guids = [x.guid for x in results]
         message = { "server" : theirServerName, "section" : sectionName, "items" : guids }
-        logging.warning("Emitting comparison_done") 
-        logging.warning(f" with {message}")
-
+        logging.warning("Emitting comparison_done with {message}") 
         socketio.emit('comparison_done', {'message' : message}, namespace='/plexsync', broadcast=True)
         return message
  
-        rabbit_queue = 'amqp://rabbitmq:rabbitmq@rabbitmq'
-        rabbit_queue2 = 'amqp://rabbitmq:rabbitmq@rabbitmq'
-        redis_queue = 'redis://redis:6379/4'
-        rabbit_queue3 = 'amqp://compare:compare@rabbitmq/compare'
-        threaded_socket = SocketIO(logger=True, async_mode='threading', engineio_logger=True,message_queue=rabbit_queue)
-        eventlet_socket = SocketIO(logger=True, async_mode='eventlet', engineio_logger=True,message_queue=rabbit_queue)
-        threaded_socket.emit('comparison_done', {'message' : 'test'}, namespace='/plexsync', broadcast=True)
-        eventlet_socket.emit('comparison_done', {'message' : 'test'}, namespace='/plexsync', broadcast=True)
-        threaded_socket.emit('comparison_done', 'test', namespace='/plexsync')
-        eventlet_socket.emit('comparison_done', 'test', namespace='/plexsync')
+#        rabbit_queue = 'amqp://rabbitmq:rabbitmq@rabbitmq'
+#        rabbit_queue2 = 'amqp://rabbitmq:rabbitmq@rabbitmq'
+#        redis_queue = 'redis://redis:6379/4'
+#        rabbit_queue3 = 'amqp://compare:compare@rabbitmq/compare'
+#        threaded_socket = SocketIO(logger=True, async_mode='threading', engineio_logger=True,message_queue=rabbit_queue)
+#        eventlet_socket = SocketIO(logger=True, async_mode='eventlet', engineio_logger=True,message_queue=rabbit_queue)
+#        threaded_socket.emit('comparison_done', {'message' : 'test'}, namespace='/plexsync', broadcast=True)
+#        eventlet_socket.emit('comparison_done', {'message' : 'test'}, namespace='/plexsync', broadcast=True)
+#        threaded_socket.emit('comparison_done', 'test', namespace='/plexsync')
+#        eventlet_socket.emit('comparison_done', 'test', namespace='/plexsync')
 
       

@@ -1,5 +1,9 @@
-from . import socketio, celery, logger
+from .factory import create_app, make_socketio, make_celery, get_logger
 from plexsync.plexsync import PlexSync
+
+app = create_app(main=False)
+socketio = make_socketio(app=app, main=False)
+logger = get_logger(app)
 
 @socketio.on('comparison_done', namespace='/plexsync')
 def plexsync_message(message):
