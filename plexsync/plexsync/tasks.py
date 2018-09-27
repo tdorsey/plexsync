@@ -9,10 +9,10 @@ import requests
 
 from .factory import create_app, make_celery, make_socketio, get_logger
 
-floobaz = create_app()
-celery = make_celery(floobaz, main=False)
-socketio = make_socketio(floobaz, main=False)
-log = get_logger(floobaz)
+flask_app = create_app()
+celery = make_celery(flask_app, main=False)
+socketio = make_socketio(flask_app, main=False)
+log = get_logger(flask_app)
 
 def getTaskProgress(taskID):
       task = celery.AsyncResult(taskID)

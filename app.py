@@ -17,6 +17,7 @@ import traceback
 import sys
 
 app = create_app(main=True)
+celery = make_celery(app, main=True)
 socketio = make_socketio(main=True, app=app)
 
 plexsync = None
@@ -298,10 +299,13 @@ def render_and_emit(message):
 
 
 if __name__ == '__main__':
-    celery = make_celery(app)
     #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.DEBUG)
 
-    socketio.run(app, host='0.0.0.0', port=5000)
+#This hangs serving the index page
+    socketio.run(app, debug=app.config['DEBUG'], host='0.0.0.0', port=5000)
+
+#This serves with eventlet warnings, but can't find the templates
+#    app.run(host='0.0.0.0', port=5000)
 

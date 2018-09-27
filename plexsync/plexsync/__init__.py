@@ -1,3 +1,10 @@
+from flask import Flask
+from flask_socketio import SocketIO
+from celery import Celery
+from .app_config import Config as config
+
+celery = Celery(__name__, broker=config.CELERY_BROKER_URL)
+socketio = SocketIO()
 
 
 # Import celery task so that it is registered with the Celery workers

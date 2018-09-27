@@ -6,6 +6,8 @@ from celery import Celery
 import logging
 import os
 
+socketio = SocketIO()
+
 def get_logger(app):
     return logging.getLogger(app.import_name)
 
@@ -21,7 +23,7 @@ def make_celery(app, main=True):
         def on_failure(self, exc, task_id, args, kwargs, einfo):
             kwargs={}
             kwargs['exc_info']=exc
-            log.error('Task % failed to execute', task_id, **kwargs)
+            log.error(f'Task {task_id} failed to execute', **kwargs)
             super().on_failure(exc, task_id, args, kwargs, einfo)
 
         def after_return(self, status, retval, task_id, args, kwargs, einfo):
@@ -38,15 +40,23 @@ def make_celery(app, main=True):
             with app.app_context():
                  socketio.emit('comparison_done', {'html': retval}, namespace='/plexsync')
     if main:
-
+        print("no, I'm in main")
         celery = Celery(
             app.import_name,
             backend=app.config['CELERY_RESULT_BACKEND'],
             broker=app.config['CELERY_BROKER_URL'],
             include='plexsync.tasks')
         celery.Task = ContextTask()
+        celery.conf.update(app.config)
+
+        
     else:
-        celery = Celery()
+        print("am I the baddy?")
+        celery = Celery(
+            app.import_name,
+            backend=app.config['CELERY_RESULT_BACKEND'],
+            broker=app.config['CELERY_BROKER_URL'],
+            include='plexsync.tasks')
     return celery
 
 def make_socketio(app, main=True):
@@ -58,13 +68,13 @@ def make_socketio(app, main=True):
         # that everything works even when there are multiple servers or
         # additional processes such as Celery workers wanting to access
         # Socket.IO
-        socketio.init_app(app,
+        socketio.init_app(app, debug=app.config['DEBUG'],
                           message_queue=app.config['SOCKETIO_MESSAGE_QUEUE'])
     else:
         # Initialize socketio to emit events through through the message queue
         # Note that since Celery does not use eventlet, we have to be explicit
         # in setting the async mode to not use it.
-        socketio.init_app(None,
+        socketio.init_app(None, debug=app.config['DEBUG'],
                           message_queue=app.config['SOCKETIO_MESSAGE_QUEUE'],
                           async_mode='threading')
 
@@ -73,15 +83,6 @@ def make_socketio(app, main=True):
 def create_app(config_name=None, main=True):
 
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'changeme'
-    app.config['LOGGER_NAME'] = 'plexsync'
-    app.config['SERVER_NAME'] = 'ps.rtd3.me'
-    app.config['DEBUG'] = True
-    app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=5)
-    app.config['CELERY_BROKER_URL'] = 'pyamqp://rabbitmq:rabbitmq@rabbitmq'
-    app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
-    app.config['SOCKETIO_MESSAGE_QUEUE'] = 'redis://redis:6379/1'
-
     return app
 
 
