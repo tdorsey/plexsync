@@ -2,11 +2,13 @@ from datetime import timedelta
 from flask import Flask
 from flask_socketio import SocketIO
 from celery import Celery
+from config import config
 
 import logging
 import os
 
 socketio = SocketIO()
+celery = Celery()
 
 def get_logger(app):
     return logging.getLogger(app.import_name)
@@ -44,8 +46,10 @@ def make_celery(app, main=True):
         celery = Celery(
             app.import_name,
             backend=app.config['CELERY_RESULT_BACKEND'],
-            broker=app.config['CELERY_BROKER_URL'],
-            include='plexsync.tasks')
+            broker=app.config['CELERY_BROKER_URL'])
+            #include='plexsync.tasks')
+
+
         celery.Task = ContextTask()
         celery.conf.update(app.config)
 
@@ -55,8 +59,8 @@ def make_celery(app, main=True):
         celery = Celery(
             app.import_name,
             backend=app.config['CELERY_RESULT_BACKEND'],
-            broker=app.config['CELERY_BROKER_URL'],
-            include='plexsync.tasks')
+            broker=app.config['CELERY_BROKER_URL'])
+#            include='plexsync.tasks')
     return celery
 
 def make_socketio(app, main=True):
@@ -79,13 +83,4 @@ def make_socketio(app, main=True):
                           async_mode='threading')
 
     return socketio
-
-def create_app(config_name=None, main=True):
-
-    app = Flask(__name__)
-    return app
-
-
-
-
 

@@ -39,7 +39,7 @@ class Base:
     def __init__(self):
             self.settings = configParser
             self.log = log
-            self.account = getAccount(self)
+            self.account = None
 
     def getSettings(self):
         return settings

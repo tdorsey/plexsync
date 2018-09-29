@@ -1,4 +1,5 @@
-from .factory import create_app, make_socketio, make_celery, get_logger
+from . import create_app
+from .factory import make_socketio, make_celery, get_logger
 from plexsync.plexsync import PlexSync
 
 app = create_app(main=False)

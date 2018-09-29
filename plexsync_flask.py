@@ -1,13 +1,7 @@
 #!/usr/bin/python3
 
-from datetime import timedelta
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
-
-from flask_socketio import SocketIO, emit
-from plexsync.plexsync import PlexSync
-from plexsync.factory import create_app, make_celery, make_socketio
-
-from plexsync.tasks import getTaskProgress  
+from plexsync import PlexSync
 
 import json
 import urllib.parse
@@ -16,9 +10,12 @@ import requests
 import traceback
 import sys
 
-app = create_app(main=True)
-celery = make_celery(app, main=True)
-socketio = make_socketio(main=True, app=app)
+from plexsync_flask import create_app
+app = create_app() 
+
+
+#celery = make_celery(aapp, main=True)
+#socketio = make_socketio(app, main=True)
 
 plexsync = None
 
@@ -38,17 +35,6 @@ def index():
         # this assumes that the 'index' view function handles the path '/'
         request.script_root = url_for('index', _external=True)
     return render_template('index.html')
-
-@app.route('/notify', methods=['GET', 'POST'])
-def notify():
-        app.logger.debug("***notify hit***")
-        app.logger.debug(f"form data: {request.form}"  )
-        fields = [k for k in request.form]                                      
-        values = [request.form[k] for k in request.form]
-        data = dict(zip(fields, values))
-        socketio.emit("comparison_done", {'message' : data }, namespace='/plexsync')
-        app.logger.debug(f"{data}")
-        return jsonify(data) 
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -293,7 +279,7 @@ def render_and_emit(message):
     with app.app_context():
         html = render_template('media.html', media=template_data)
 
-    socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+    #socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
 
 
 
@@ -303,6 +289,8 @@ if __name__ == '__main__':
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.DEBUG)
 
+
+    socketio = SocketIO(app=app, message_queue=app.config['SOCKETIO_MESSAGE_QUEUE'])
 #This hangs serving the index page
     socketio.run(app, debug=app.config['DEBUG'], host='0.0.0.0', port=5000)
 

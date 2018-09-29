@@ -7,9 +7,10 @@ import json
 import logging
 import requests
 
-from .factory import create_app, make_celery, make_socketio, get_logger
+from plexsync-flask import celery, make_celery
+from .factory import make_socketio, get_logger
 
-flask_app = create_app()
+flask_app = create_app(main=False)
 celery = make_celery(flask_app, main=False)
 socketio = make_socketio(flask_app, main=False)
 log = get_logger(flask_app)

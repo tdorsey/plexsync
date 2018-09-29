@@ -23,8 +23,6 @@ VOLUME /logs
 VOLUME /downloads
 WORKDIR /app
 
-COPY config/config.ini /config
-
 #build base >> gcc >> eventlet >> websockets
 RUN apk update && apk add nodejs-npm python3 git nano build-base
 
@@ -46,7 +44,6 @@ COPY package.json .
 RUN npm install --save
 
 COPY entrypoint.sh /
-COPY app.py .
 
 COPY /static  ./static
 #TODO: Symlinking should work here but doesn't, figure out why
@@ -60,6 +57,9 @@ COPY /templates ./templates
 RUN browserify -d ./static/scripts/main.js --debug -p [ parcelify -o ./static/css/bundle.css ] > ./static/scripts/bundle.js 
                   
 RUN chown -R  plexsync:plexsync /app
+
+COPY __init__.py /app
+COPY plexsync_flask.py /app
 
 
 COPY /plexsync/ ./plexsync
