@@ -1,9 +1,10 @@
 import os
+import uuid
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     FLASK_APP = 'plexsync-web'
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or f"uuid.uuid1()"
     SSL_DISABLE = False
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_RECORD_QUERIES = True
@@ -12,8 +13,10 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    CELERY_BROKER_URL = 'amqp://rabbitmq:rabbitmq@rabbitmq'
-    CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+    CELERY_CONFIG = {
+                        'CELERY_BROKER_URL' : 'amqp://rabbitmq:rabbitmq@rabbitmq',
+                        'CELERY_RESULT_BACKEND' : 'redis://redis:6379/0'
+                    }
     SOCKETIO_MESSAGE_QUEUE = 'redis://redis:6379/1'
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = 'Flasky Admin <system@rtd3.me>'
