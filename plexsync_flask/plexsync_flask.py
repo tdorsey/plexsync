@@ -1,23 +1,5 @@
 #!/usr/bin/python3
 
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
-from plexsync import PlexSync
-
-import json
-import urllib.parse
-import logging
-import requests
-import traceback
-import sys
-
-#from plexsync_flask import create_app
-#app = create_app() 
-
-
-#celery = make_celery(aapp, main=True)
-#socketio = make_socketio(app, main=True)
-
-plexsync = None
 
 def as_json():
 # If content type is application/json, return json, else render the template

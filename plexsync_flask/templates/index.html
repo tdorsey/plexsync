@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
     <h1>Login</h1>
-    <form method="post" action="{{ url_for('login') }}">
+    <form method="post" action="{{ url_for('main.login') }}">
         <div><label>Username:</label> <input type="text" name="username" required></div>
         <div><label>Password:</label> <input type="password" name="password"></input></div>
         <div><button type="submit">Login</button></div>
@@ -9,8 +9,7 @@
 	<div id="plex-oauth">
 	    <a href="#" class="btn btn-light">
 		<img src="{{ url_for('static', filename='images/plex-logo.png') }}" />
-                Login with Plex
-            </a>
+        </a>
 	</div>
 
 {% endblock %}

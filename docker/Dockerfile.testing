@@ -25,6 +25,7 @@ COPY celeryconfig.py /plexsync_flask/
 COPY config.py /plexsync_flask/
 COPY manage.py /plexsync_flask/
 COPY requirements.txt /plexsync_flask/
+COPY entrypoint.sh /
 
 RUN apk update && apk add nodejs-npm python3 git nano build-base uwsgi-python
 
@@ -46,12 +47,13 @@ RUN npm install
 COPY webserver/ /plexsync_flask/webserver/
 COPY tests/ /plexsync_flask/tests/
 
-COPY entrypoint.sh /
 
 WORKDIR /plexsync_flask
 
-
 COPY plexsync_flask/ plexsync_flask/
+
+COPY plexsync_flask/static/ plexsync_flask/static/
+COPY plexsync_flask/templates/ plexsync_flask/templates
 
 RUN python manage.py createdb
 CMD ["/usr/bin/env/python", "manage.py", "celery"]

@@ -1,13 +1,13 @@
 import threading
 import time
 
-from flask import Blueprint, render_template, jsonify, current_app
+from flask import Blueprint, url_for, render_template, request, jsonify, current_app, url_for
 
 from .models import User
 from .events import push_model
-from . import db, stats
+from . import db
 
-main = Blueprint('main', __name__)
+main = Blueprint('main', __name__, template_folder='templates')
 
 
 @main.before_app_first_request
@@ -28,18 +28,28 @@ def before_first_request():
         thread.start()
 
 
-@main.before_app_request
-def before_request():
-    """Update requests per second stats."""
-    stats.add_request()
-
+#@main.before_app_request
+#def before_request():
 
 @main.route('/')
 def index():
-    """Serve client-side application."""
+    if not request.script_root:
+        # this assumes that the 'index' view function handles the path '/'
+        request.script_root = url_for('main.index', _external=True)
     return render_template('index.html')
 
+@main.route('/login', methods=['POST'])
+def login():
+    session['username'] = request.form['username']
+    session['password'] = request.form['password']
 
-@main.route('/stats', methods=['GET'])
-def get_stats():
-    return jsonify({'requests_per_second': stats.requests_per_second()})
+    try:
+        plexsync = PlexSync()
+        plexsync.getAccount()
+        return redirect(url_for('main.home', _scheme='https', _external=True), code=303)
+    except Exception as e:
+       return json.dumps(str(e))
+
+#@main.route('/stats', methods=['GET'])
+#def get_stats():
+#    return jsonify({'requests_per_second': stats.requests_per_second()})
