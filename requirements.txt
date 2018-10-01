@@ -37,7 +37,7 @@ pbr==1.10.0
 pep8==1.7.0
 pick==0.6.4
 PlexAPI==3.0.6
-./plexsync
+#./plexsync
 pyflakes==1.0.0
 Pygments==2.1.3
 pyparsing==2.2.1
