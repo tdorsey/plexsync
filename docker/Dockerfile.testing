@@ -53,6 +53,8 @@ COPY plexsync_flask/templates/ plexsync_flask/templates/
 
 COPY plexsync_flask/package.json plexsync_flask/
 
+RUN python manage.py createdb
+
 WORKDIR /plexsync_flask/plexsync_flask
 RUN npm install --save
 
@@ -61,5 +63,4 @@ RUN cp node_modules/octicons/build/svg/* static/images/
 RUN browserify -d  /plexsync_flask/plexsync_flask/static/scripts/main.js --debug -p [ parcelify -o /plexsync_flask/plexsync_flask/static/css/bundle.css ] > /plexsync_flask/plexsync_flask/static/scripts/bundle.js
 
 WORKDIR /plexsync_flask
-RUN python manage.py createdb
 CMD ["/usr/bin/env/python", "manage.py", "celery"]

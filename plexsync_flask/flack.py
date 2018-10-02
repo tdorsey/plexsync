@@ -1,7 +1,8 @@
+import requests
 import threading
 import time
 
-from flask import Blueprint, url_for, render_template, request, jsonify, current_app, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 
 from .models import User
 from .events import push_model
@@ -50,6 +51,48 @@ def login():
     except Exception as e:
        return json.dumps(str(e))
 
-#@main.route('/stats', methods=['GET'])
-#def get_stats():
-#    return jsonify({'requests_per_second': stats.requests_per_second()})
+@main.route('/home', methods=['GET'])
+def home():
+   try:
+        token = session['token']
+        session.permanent = True
+        plexsync = PlexSync()
+        if token:
+            plexAccount = plexsync.getAccount(token=token)
+        else:
+            plexAccount = plexsync.getAccount()
+        servers = plexsync.getServers(plexAccount)
+        sortedServers = sorted([server.name for server in servers])
+        return render_template('home.html', server_list=sortedServers)   
+   except KeyError:
+        return redirect('/')
+
+@main.route('/pin/<string:pinId>', methods=['GET'])
+def exchangePinForAuth(pinId):
+   try:
+        current_app.logger.debug(f"received pin id: {pinId}")
+        headers = {'X-Plex-Client-Identifier': 'plexsync'}
+        url = f"https://plex.tv/api/v2/pins/{pinId}.json"
+        r = requests.get(url=url, headers=headers )
+        token = r.json()['authToken']
+        session['token'] = token
+        current_app.logger.debug(f"Got auth token {token}")
+        return redirect(url_for('main.home'))
+   except KeyError:
+        return redirect('/')
+
+@main.route('/servers/<string:serverName>', methods=['GET','POST'])
+def sections(serverName):
+    current_app.logger.debug(f"routing for {serverName}")
+    plexsync = PlexSync()
+    plexsync.getAccount()
+    server = plexsync.getServer(serverName)
+    sections = plexsync.getSections(server)
+
+    section_list = []
+    
+    for section in sections:
+        result = {"id": section.key, "name": section.title, "type": section.type}
+        section_list.append(result)
+        sortedSections = sorted(section_list,key=lambda s: s.get("name"))
+    return json.dumps(sortedSections, ensure_ascii=False)

@@ -22,8 +22,9 @@ def on_ping_user(token):
 
 @celery.task
 def post_message(user_id, data):
-    """Celery task that posts a message."""
     from .wsgi_aux import app
+
+    """Celery task that posts a message."""
     with app.app_context():
         user = User.query.get(user_id)
         if user is None:
@@ -71,13 +72,10 @@ def on_disconnect():
 
 @socketio.on('comparison_done', namespace='/plexsync')
 def plexsync_message(message):
-   logger.debug(f"comparison re emitted {message}")
-
+    socketio.emit(namespace='/plexsync')
 
 @socketio.on('render_template', namespace='/plexsync')
 def render_template(message):
-    logger.info(f"rendering template for {message.get('guid')}")
-    logger.debug(f"message: {message}")
 
     plexsync = PlexSync()
     plexsync.render(message)
@@ -88,9 +86,8 @@ def plexsync_broadcast(message):
 
 @socketio.on('connect', namespace='/plexsync')
 def plexsync_connect():
-    logger.info('Client connected')
     socketio.emit('my response', {'data': 'Connected'})
 
 @socketio.on('disconnect', namespace='/plexsync')
 def plexsync_disconnect():
-    logger.info('Client disconnected')
+    socketio.emit('Client disconnected')
