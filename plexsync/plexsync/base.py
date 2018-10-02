@@ -45,7 +45,7 @@ class Base:
         return settings
 
     def getAccount(self,username=None, password=None, token=None):
-        return self.account or getAccount(token=token) or getAccount(username, password)
+        return self.account or getAccount(self,token=token) or getAccount(self,username, password)
 
     def writeSettings(self,settings):
         with open(CONFIG_PATH, 'w') as config_file:

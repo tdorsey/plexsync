@@ -10,7 +10,7 @@ from celery import states
 
 from plexsync import PlexSync
 
-from . import celery
+from . import celery, socketio
 from .utils import url_for
 
 text_types = (str, bytes)
@@ -237,7 +237,15 @@ def render_task(message):
             socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
 
 @celery.task()
+def emit_task(message):
+    from .wsgi_aux import app
+    with app.app_context():
+        socketio.emit(message, namespace="/plexsync")
+
+@celery.task()
 def compare_task(message,bind=True, throw=True):
+    from .wsgi_aux import app
+    with app.app_context():
         plexsync = PlexSync()
 
         yourServerName = message.get("yourServer")
@@ -255,6 +263,5 @@ def compare_task(message,bind=True, throw=True):
         results = plexsync.compareLibraries(yourLibrary, theirLibrary)
         guids = [x.guid for x in results]
         message = { "server" : theirServerName, "section" : sectionName, "items" : guids }
-        logging.warning("Emitting comparison_done with {message}") 
         socketio.emit('comparison_done', {'message' : message}, namespace='/plexsync', broadcast=True)
         return message

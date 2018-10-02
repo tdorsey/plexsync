@@ -63,4 +63,3 @@ RUN cp node_modules/octicons/build/svg/* static/images/
 RUN browserify -d  /plexsync_flask/plexsync_flask/static/scripts/main.js --debug -p [ parcelify -o /plexsync_flask/plexsync_flask/static/css/bundle.css ] > /plexsync_flask/plexsync_flask/static/scripts/bundle.js
 
 WORKDIR /plexsync_flask
-CMD ["/usr/bin/env/python", "manage.py", "celery"]
