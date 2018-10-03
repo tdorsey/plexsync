@@ -5,6 +5,6 @@
 #python3 manage.py "celery"
 #python3 manage.py "runserver"
 
-nohup /usr/local/bin/python3 manage.py celery &
+/usr/local/bin/python3 manage.py celery &
 nohup  /usr/local/bin/python3 manage.py runserver -h 0.0.0.0
 #echo "runserver"

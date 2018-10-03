@@ -278,21 +278,3 @@ def taskstatus(task_id):
 def ack():
     current_app.logger.warning('message was received!')
 
-def render_and_emit(message):
-    
-    server = message.get("server")
-    section = message.get("section")
-    guid = message.get("guid")
-
-    plexsync = PlexSync()
-    plexsync.getAccount()
-    theirServer = plexsync.getServer(server)
-    section = plexsync.getSection(theirServer, section)
-    result = section.search(guid=guid).pop()
-    template_data = plexsync.prepareMediaTemplate(result)
-
-    with app.app_context():
-        html = render_template('media.html', media=template_data)
-
-    socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
-

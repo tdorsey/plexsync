@@ -11,12 +11,12 @@ $(document).ready(function(){
     });
     socket.on('comparison_done', function(response) {
         console.log("received comparison_done")
-        let message = {"server" : response.server,
-                       "section" : response.section  };
-        response.items.forEach(guid =>
+        let template = {"server" : response.message.server,
+                       "section" : response.message.section  };
+        response.message.items.forEach(guid =>
 		 {
-                      message.guid = guid ;
-                      socket.emit("render_template", message);
+                      template.guid = guid ;
+                      socket.emit("render_template", template);
             });
     });
    

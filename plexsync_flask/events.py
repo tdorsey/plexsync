@@ -1,9 +1,13 @@
-from flask import g, session
+from flask import g, session, render_template
 
 from . import db, socketio, celery
 from .models import User, Message
 from .auth import verify_token
 
+from plexsync import PlexSync
+def dump(obj):
+  for attr in dir(obj):
+    return "obj.%s = %r" % (attr, getattr(obj, attr))
 
 def push_model(model):
     """Push the model to all connected Socket.IO clients."""
@@ -76,10 +80,31 @@ def plexsync_message(message):
 
 @socketio.on('render_template', namespace='/plexsync')
 def render_template(message):
+#    from .wsgi_aux import app as aux
+#    app.logger.debug(f"Message is: {message}")    with aux.app_context():
+#        try:
+#            the_app = aux.app_context().current_app
+#            t = dump(the_app)
+#            the_app.logger.warning(t)
+#            the_app.logger.debug(f"Message is: {message}")
+#        except:
+#            pass
+    html = '<h3>hello world</h3>'
+#        html = current_app.render_template('main.media', media=template_data)
+    socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+    return
 
-    plexsync = PlexSync()
-    plexsync.render(message)
-    
+ #   server = message.get("server")
+ #   section = message.get("section")
+ #   guid = message.get("guid")
+
+ #   plexsync = PlexSync()
+ #   plexsync.getAccount()
+ #   theirServer = plexsync.getServer(server)
+ #   section = plexsync.getSection(theirServer, section)
+ #   result = section.search(guid=guid).pop()
+ #   template_data = plexsync.prepareMediaTemplate(result)
+
 @socketio.on('broadcast', namespace='/plexsync')
 def plexsync_broadcast(message):
     socketio.emit('my response', {'data': message['data']}, broadcast=True)
