@@ -160,16 +160,10 @@ class PlexSync(Base):
         m.fetchMissingData()
         return m
 
-    def error_handler(self, uuid):
-        result = AsyncResult(uuid)
-        ex = result.get(propagate=False)
-        logging.exception(
-            f"Task {uuid} raised exception: {ex}\n{result.traceback}")
-
+  
     def render(self, message):
       log = logging.getLogger('plexsync')
       log.debug("Plexsync rendering")
-      tasks.render_task.delay(message)
 
     def createPathForMedia(self, media):
         if media.type == "episode":
@@ -195,7 +189,7 @@ class PlexSync(Base):
 
         return filename
 
-    def transfer(self, serverName, sectionID, guid):
+    def buildMediaInfo(self, serverName, sectionID, guid):
         try:
                     plexsync = PlexSync()
                     server = plexsync.getServer(serverName)
@@ -228,27 +222,9 @@ class PlexSync(Base):
                                             'folderPath': str(plexsync.createPathForMedia(episode)),
                                             'fileName': plexsync.createFilenameForMedia(episode)
                                             }
-                                media_info["destination"] = os.path.join(
-                                    media_info["folderPath"], media_info["fileName"])
+                                media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
                                 self.log.debug(f"result: {media_info}, {media}")
-                                task = self.download_media.signature(args=[media_info])
-                                self.log.debug(f"Task: {task}")
-                                episode_list.append(task)
-
-                        job = group(episode_list)
-                        group_result = job.delay()
-                        group_result.save()
-                        self.log.warn(f"grpres: {group_result}")
-
-                        response = {
-                        'key': media.key,
-                        'guid': media.guid,
-                        'title': media.title,
-                        'task': group_result.id,
-                        'episodes': len(media.episodes()),
-                        'seasons': len(media.seasons()) 
-                                }
-                        media_list.append(response)
+                                media_list.append(media_info)
 
                     if media and media.type == "movie":
                         for part in media.iterParts():
@@ -260,63 +236,19 @@ class PlexSync(Base):
                                         'folderPath': str(plexsync.createPathForMedia(media)),
                                         'fileName': plexsync.createFilenameForMedia(media)
                                         }
-                            media_info["destination"] = os.path.join(
-                                media_info["folderPath"], media_info["fileName"])
-                            self.log.warn(f"MediaINF: {media_info}")
-                            task = self.download_media.signature(args=[media_info])
-                            movie_list = []
-                            movie_list.append(task)
-                            job = group(movie_list)
-                            group_result = job.delay()
-                            group_result.save()
                             
-                            response = {'key': part.key,
-                                        'guid': media.guid,
-                                        'title': media.title,
-                                        'task': group_result.id,
-                                        'section': media.librarySectionID,
-                                        'title': media.title,
-                                        'folderPath': media_info["folderPath"],
-                                        'fileName': media_info["fileName"]
-                                        }
-                            media_info["destination"] = os.path.join(
-                                media_info["folderPath"], media_info["fileName"])
+                            media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
                             self.log.warn(f"MediaINF: {media_info}")
-                            task = self.download_media.signature(args=[media_info])
-                            movie_list = []
-                            movie_list.append(task)
-                            job = group(movie_list)
-                            group_result = job.delay()
-                            group_result.save()
-                            
-                            response = {'key': part.key,
-                                        'guid': media.guid,
-                                        'title': media.title,
-                                        'task': group_result.id,
-                                        'section': media.librarySectionID,
-                                        'title': media.title,
-                                        'folderPath': str(plexsync.createPathForMedia(media)),
-                                        'fileName': plexsync.createFilenameForMedia(media)
-                                        }
-                            media_info["destination"] = os.path.join(
-                                media_info["folderPath"], media_info["fileName"])
+                      
+                            media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
                             self.log.warn(f"MediaINF: {media_info}")
-                            task = self.download_media.signature(args=[media_info])
-                            movie_list = []
-                            movie_list.append(task)
-                            job = group(movie_list)
-                            group_result = job.delay()
-                            group_result.save()
                             
-                            response = {'key': part.key,
-                                        'guid': media.guid,
-                                        'title': media.title,
-                                        'task': group_result.id}
-                            media_list.append(response)
+                            media_list.append(media_info)
 
                     return media_list
         except Exception as e:
             self.log.exception(e)
+
     def download(self, media):
         log = logging.getLogger('plexsync')
         try:
