@@ -12,7 +12,7 @@ from . import db
 
 from .events import push_model
 from .models import User
-from .tasks import compare_task, emit_task
+from .tasks import compare_task, emit_task, transfer_task
 
 main = Blueprint('main', __name__, template_folder='templates')
 
@@ -108,7 +108,7 @@ def emit(message):
 
 @main.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 def media(serverName, section):
-    app.logger.debug(f"routing for {serverName} - {section}")
+    current_app.logger.debug(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
     plexsync.getAccount()
     
@@ -159,24 +159,28 @@ def transfer():
 
         ownedServers = plexsync.getOwnedServers()
         currentUserServer = session['yourServer']
-        app.logger.debug(f"ownedServers {ownedServers}")
-        app.logger.debug(f"currentServer {currentUserServer}")
+        current_app.logger.debug(f"ownedServers {ownedServers}")
+        current_app.logger.debug(f"currentServer {currentUserServer}")
         authorized = False
         for s in ownedServers:
             if s.friendlyName == currentUserServer:
-                app.logger.debug(f"authorized")
                 authorized = True
-
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(sectionID)
             result = section.search(guid=guid).pop()
         if authorized:
-            app.logger.debug("building task")
+                current_app.logger.debug(f"authorized")
             try:
-                transferred = plexsync.transfer(theirServer.friendlyName, sectionID, guid)
-                app.logger.debug(f"Transferred Results {transferred} Len: {len(transferred)}")
-            except Exception as e:
-                app.logger.exception(f"Exception {e}")
+                message = { "server" : theirServer.friendlyName,
+                            "section" : section,
+                            "guid" : guid  }
+                signature = transfer_task.s()
+                task = signature.apply_async(args=[message])
+                current_app.logger.debug(f"Compare Task: {task} ")
+                message["task"] = task.id
+            return jsonify(message)
+ except Exception as e:
+                current_app.logger.exception(f"Exception {e}")
                 status = 500
                 response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
                 response.status_code = status
@@ -189,14 +193,14 @@ def transfer():
             return response
         
         else:
-            app.logger.debug(f"not authorized")
+            current_app.logger.debug(f"not authorized")
             msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
             status = 403
             response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
             response.status_code = status
             return response
     except Exception as e:
-        app.logger.exception(f"Exception {e}")
+        current_app.logger.exception(f"Exception {e}")
         status = 500
         response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
         response.status_code = status
