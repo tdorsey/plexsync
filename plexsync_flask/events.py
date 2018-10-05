@@ -1,13 +1,16 @@
-from flask import g, session, render_template
+from flask import g, session, render_template, current_app
 
 from . import db, socketio, celery
 from .models import User, Message
 from .auth import verify_token
 
+import logging
+psl = logging.getLogger("plexsync")
+
 from plexsync import PlexSync
 def dump(obj):
   for attr in dir(obj):
-    return "obj.%s = %r" % (attr, getattr(obj, attr))
+    psl.warning("obj.%s = %r" % (attr, getattr(obj, attr)))
 
 def push_model(model):
     """Push the model to all connected Socket.IO clients."""
@@ -80,30 +83,34 @@ def plexsync_message(message):
 
 @socketio.on('render_template', namespace='/plexsync')
 def render_template(message):
-#    from .wsgi_aux import app as aux
-#    app.logger.debug(f"Message is: {message}")    with aux.app_context():
-#        try:
-#            the_app = aux.app_context().current_app
-#            t = dump(the_app)
-#            the_app.logger.warning(t)
-#            the_app.logger.debug(f"Message is: {message}")
-#        except:
-#            pass
-    html = '<h3>hello world</h3>'
-#        html = current_app.render_template('main.media', media=template_data)
-    socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+    import jinja2
+    from .wsgi_aux import app as aux
+    with aux.app_context():
+        plexsync = PlexSync()
+        plexsync.getAccount()
+        server = plexsync.getServer(message.get("server"))
+        section = plexsync.getSection(server, message.get("section"))
+        guid = message.get("guid")
+        result = section.search(guid=guid).pop()
+        template_data = plexsync.prepareMediaTemplate(result)
+    #    html = '<h3>hello world</h3>'
+        try:
+            psl.warning(f"Template {template_data}")
+            psl.warning(f"app render")
+
+
+            
+            template = current_app.jinja_env.get_template("media.html")
+            html = template.render(media=template_data)            
+
+            psl.warning(f"Jinja render {html}")
+            
+
+            socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
+
+        except Exception as e:
+            psl.exception(e)
     return
-
- #   server = message.get("server")
- #   section = message.get("section")
- #   guid = message.get("guid")
-
- #   plexsync = PlexSync()
- #   plexsync.getAccount()
- #   theirServer = plexsync.getServer(server)
- #   section = plexsync.getSection(theirServer, section)
- #   result = section.search(guid=guid).pop()
- #   template_data = plexsync.prepareMediaTemplate(result)
 
 @socketio.on('broadcast', namespace='/plexsync')
 def plexsync_broadcast(message):

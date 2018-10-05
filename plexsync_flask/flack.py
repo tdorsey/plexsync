@@ -1,6 +1,8 @@
 import requests
 import threading
 import time
+import urllib.parse
+import logging
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 
@@ -31,10 +33,6 @@ def before_first_request():
         thread = threading.Thread(target=find_offline_users,
                                   args=(current_app._get_current_object(),))
         thread.start()
-
-
-#@main.before_app_request
-#def before_request():
 
 @main.route('/')
 def index():
@@ -204,6 +202,22 @@ def transfer():
         response.status_code = status
         return response
 
+@main.route('/item/<string:serverName>/<string:sectionName>/<path:guid>', methods=['GET'])
+def renderSingleItemPath(serverName, sectionName, guid):
+            current_app.logger.debug(f"hit item rest route")
+            current_app.logger.warning(f"GUID {guid}")
+            serverName = urllib.parse.unquote(serverName)
+            sectionName = urllib.parse.unquote(sectionName)
+            guid = urllib.parse.unquote(guid)
+            current_app.logger.warning(f"Unquoted: {guid}")
+            plexsync = PlexSync()
+            plexsync.getAccount()
+            server = plexsync.getServer(serverName)
+            section = plexsync.getSection(server, sectionName)
+            result = section.search(guid=guid).pop()
+            m = plexsync.prepareMediaTemplate(result)
+            return render_template('media.html', media=m)
+
 @main.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
 @main.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:section>', methods=['GET'])
 @main.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionKey>', methods=['GET'])
@@ -238,10 +252,10 @@ def compare(yourServerName, theirServerName, sectionKey=None):
             response = jsonify(str(e))
             response.status_code = 500
             return response
-    #if as_json():
-    #return jsonify(result_list)
-    #else:
-     #   return render_template('media.html', media=result_list)
+#    if as_json():
+ #   return jsonify(result_list)
+  #  else:
+        return render_template('media.html', media=result_list)
 
 @main.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):

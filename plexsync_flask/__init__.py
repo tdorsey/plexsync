@@ -34,6 +34,13 @@ def create_app(config_name=None, main=True):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+
+    from .plexkey_converter import PlexKeyConverter
+    app.url_map.converters['plexkey'] = PlexKeyConverter
+
+
+
+
     # Initialize flask extensions
     db.init_app(app)
     bootstrap.init_app(app)
