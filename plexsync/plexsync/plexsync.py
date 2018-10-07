@@ -33,13 +33,13 @@ class PlexSync(Base):
         if show_enabled:
             self.show_provider = ThirdParty(ThirdPartyService.Show)
         else:
-            self.log.info(f"{ThirdPartyService.Show.value} disabled")
+            log.info(f"{ThirdPartyService.Show.value} disabled")
         if movie_enabled:
             self.movie_provider = ThirdParty(ThirdPartyService.Movie)
         else:
-            self.log.info(f"{ThirdPartyService.Movie.value} disabled")
+            log.info(f"{ThirdPartyService.Movie.value} disabled")
         self.account = self.getAccount()
-        self.log.info(f"Account Init: {self.account}")
+        log.info(f"Account Init: {self.account}")
         self.servers = None
 
     @staticmethod
@@ -47,7 +47,7 @@ class PlexSync(Base):
         print('*******************')
 
     def getServers(self, account=None):
-        self.log.info(account)
+        log.info(account)
         if account is None:
             account = self.getAccount()
         resources = account.resources()
@@ -58,11 +58,11 @@ class PlexSync(Base):
         if not self.servers:
             self.servers = self.getServers()
         ownResources = filter(lambda x: x.owned == True, self.servers)
-        self.log.debug(f"ownResources {ownResources}")
+        log.debug(f"ownResources {ownResources}")
         ownServers = []
         for resource in ownResources:
             ownServers.append(resource.connect())
-        self.log.debug(f"ownServers {ownServers}")
+        log.debug(f"ownServers {ownServers}")
         return ownServers
 
     def getServer(self, serverName):
@@ -77,7 +77,7 @@ class PlexSync(Base):
     def getResult(self, sectionID, guid):
         section = self.server.library.sectionByID(sectionID)
         result = section.search(guid=guid)
-        self.log.debug(guid)
+        log.debug(guid)
         return result
 
     def getResults(self, server, section):
@@ -146,7 +146,7 @@ class PlexSync(Base):
 
 
     def compareLibraries(self, yourResults, theirResults):
-        self.log.debug("Comparing libraries")
+        log.debug("Comparing libraries")
         yourSet = set(yourResults)
         theirSet = set(theirResults)
 
@@ -178,33 +178,34 @@ class PlexSync(Base):
         return path
 
     def createFilenameForMedia(self, media):
-        import pdb; pdb.set_trace()
-        self.log.debug(f"{media}")
-        self.log.debug(f"{len(media.media)} length")
+        log.debug(f"{media}")
+        log.debug(f"{len(media.media)} length")
         if media.type == "episode":
             filename = f"{media.show().title} - {media.seasonEpisode} - {media.title}.{media.media.pop().container}"
         if media.type == "movie":
             filename = f"{media.title} [{media.year}].{media.media.pop().container}"
-        self.log.debug(f"{filename}")
+        log.debug(f"{filename}")
 
         return filename
 
-    def buildMediaInfo(self, serverName, sectionID, guid):
+    def buildMediaInfo(self, serverName, sectionName, guid):
         try:
+                    log.warn(f"Building media info")
                     plexsync = PlexSync()
                     server = plexsync.getServer(serverName)
-                    section = server.library.sectionByID(sectionID)
-                    self.log.warn(f"sectionkey = {section.key} {section.type}")
+                    section = plexsync.getSection(server, sectionName)
+                    sectionID = section.key
+                    log.warn(f"sectionkey = {section.key} {section.type}")
                     results = section.search(guid=guid)
-                    self.log.warn(f"{section.title} {section.type}")
-                    self.log.warn(f"{len(results)} Results found")
+                    log.warn(f"{section.title} {section.type}")
+                    log.warn(f"{len(results)} Results found")
 
                     if len(results) == 1:
                         media = results.pop()
-                        self.log.warn(f"{media} Media")
+                        log.warn(f"{media} Media")
 
                     else:
-                        self.log.warn("too many results")
+                        log.warn("too many results")
                     media_list = []
                     
                     if media and media.type == "show":
@@ -219,11 +220,11 @@ class PlexSync(Base):
                                             'title': episode.title,
                                             'season': season.title,
                                             'episode': episode.index,
-                                            'folderPath': str(plexsync.createPathForMedia(episode)),
-                                            'fileName': plexsync.createFilenameForMedia(episode)
+                                            'folderPath': str(self.createPathForMedia(episode)),
+                                            'fileName': self.createFilenameForMedia(episode)
                                             }
                                 media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
-                                self.log.debug(f"result: {media_info}, {media}")
+                                log.debug(f"result: {media_info}, {media}")
                                 media_list.append(media_info)
 
                     if media and media.type == "movie":
@@ -238,16 +239,16 @@ class PlexSync(Base):
                                         }
                             
                             media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
-                            self.log.warn(f"MediaINF: {media_info}")
+                            log.warn(f"MediaINF: {media_info}")
                       
                             media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
-                            self.log.warn(f"MediaINF: {media_info}")
+                            log.warn(f"MediaINF: {media_info}")
                             
                             media_list.append(media_info)
 
                     return media_list
         except Exception as e:
-            self.log.exception(e)
+            log.exception(e)
 
     def download(self, media):
         log = logging.getLogger('plexsync')
@@ -255,7 +256,7 @@ class PlexSync(Base):
             for part in media.iterParts():
                 url = media._server.url(
                     f"{part.key}?download=1", includeToken=True)
-                self.log.debug(f"url: {url}")
+                log.debug(f"url: {url}")
                 renamed_file = f"{media.title} [{media.year}].{part.container}"
                 log.debug(renamed_file)
                 downloaded_file = media.download(savepath=savepath)

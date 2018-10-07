@@ -22,15 +22,14 @@ function onTransferClick(obj) {
         progressDiv = innerCardDeck.find(".progress");
 
         //start the transfer 
-        response.result.forEach(element => {
-            sessionStorage.setItem(element.key, element);
+        response.items.forEach(element => {
             bar =  progress.createBar(element.task);
             bar.closest(".card").toggle(true);
 
             progressDiv.append(bar);
             progress.updateBar(bar, element.task);
         });
-        notify.showNotification("Transfer Started", response.message.text);
+        notify.showNotification("Transfer Started");
 
     }, function (response) {
         msg = `${response.status}: ${response.message.text}`;
