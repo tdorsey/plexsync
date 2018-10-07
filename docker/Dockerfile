@@ -20,60 +20,46 @@ VOLUME /config
 VOLUME /logs
 VOLUME /downloads
 
-VOLUME /plexsync_flask
+COPY celeryconfig.py /plexsync_flask/
+COPY config.py /plexsync_flask/
+COPY manage.py /plexsync_flask/
+COPY requirements.txt /plexsync_flask/
+COPY entrypoint.sh /
 
-#COPY plexsync_flask/* /plexsync_flask/
-
-#build base >> gcc >> eventlet >> websockets
 RUN apk update && apk add nodejs-npm python3 git nano build-base uwsgi-python
 
 RUN npm install -g npm@latest
 RUN npm install -g browserify
 
-RUN pip3 install --upgrade pip
+RUN pip install --upgrade pip
+COPY plexsync/ /plexsync/
+RUN pip install -e /plexsync/
 
-RUN chown -R plexsync:plexsync /plexsync_flask && chmod -R 770 /plexsync_flask
+WORKDIR /plexsync_flask
+RUN pip install -r requirements.txt
 
+WORKDIR /plexsync_flask/plexsync_flask
 
-COPY requirements.txt /plexsync_flask/
-RUN pip3 install -r /plexsync_flask/requirements.txt
-
-COPY manage.py /plexsync_flask
-COPY celeryconfig.py /plexsync_flask
-
-
-##RUN chmod g+s .
-#USER plexsync
-
-COPY plexsync_flask/ /plexsync_flask/
-COPY plexsync_flask/package.json .
-
-RUN npm install --save
-COPY plexsync_flask/templates/* /plexsync_flask/templates/
-COPY plexsync_flask/static/*  /plexsync_flask/static/
-#TODO: Symlinking should work here but doesn't, figure out why
-RUN cp node_modules/octicons/build/svg/* /plexsync_flask/static/images/
-RUN browserify -d  /plexsync_flask/static/scripts/main.js --debug -p [ parcelify -o /plexsync_flask/static/css/bundle.css ] > /plexsync_flask/static/scripts/bundle.js 
+COPY webserver/ /plexsync_flask/webserver/
+COPY tests/ /plexsync_flask/tests/
 
 WORKDIR /plexsync_flask
 
-COPY docker/entrypoint.sh /
 
-RUN chown -R plexsync:plexsync /downloads && chmod -R 777 /downloads
+COPY plexsync_flask/ plexsync_flask/
 
-COPY plexsync_flask/config.py /plexsync_flask
+COPY plexsync_flask/static/ plexsync_flask/static/
+COPY plexsync_flask/templates/ plexsync_flask/templates/
 
+COPY plexsync_flask/package.json plexsync_flask/
 
-RUN chown -R  plexsync:plexsync /plexsync_flask
+RUN python manage.py createdb
 
-
-
-
-COPY /plexsync/ /plexsync
-RUN pip3 install -e /plexsync
-
-#RUN python3 manage.py createdb
+WORKDIR /plexsync_flask/plexsync_flask
+RUN npm install --save
 
 
+RUN cp node_modules/octicons/build/svg/* static/images/
+RUN browserify -d  /plexsync_flask/plexsync_flask/static/scripts/main.js --debug -p [ parcelify -o /plexsync_flask/plexsync_flask/static/css/bundle.css ] > /plexsync_flask/plexsync_flask/static/scripts/bundle.js
 
-
+WORKDIR /plexsync_flask
