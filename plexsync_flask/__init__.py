@@ -35,12 +35,6 @@ def create_app(config_name=None, main=True):
     app.config.from_object(config[config_name])
 
 
-    from .plexkey_converter import PlexKeyConverter
-    app.url_map.converters['plexkey'] = PlexKeyConverter
-
-
-
-
     # Initialize flask extensions
     db.init_app(app)
     bootstrap.init_app(app)
@@ -70,6 +64,6 @@ def create_app(config_name=None, main=True):
 
     # Register async tasks support
     from .tasks import tasks_bp as tasks_blueprint
-    app.register_blueprint(tasks_blueprint, url_prefix='/tasks')
+    app.register_blueprint(tasks_blueprint, url_prefix='/task')
 
     return app
