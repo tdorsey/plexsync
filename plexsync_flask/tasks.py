@@ -1,21 +1,58 @@
 from flask import Blueprint, abort, g, request, current_app, render_template
-from celery import states, get_task_logger
+
 
 from plexsync import PlexSync
 
+from celery import states
+from celery.result import AsyncResult
+from celery.utils.log import get_task_logger
+from logging import getLogger
+
 from . import celery, socketio
+
 from .utils import url_for
 
 import math, time
 
 tasks_bp = Blueprint('tasks', __name__)
 
-  def error_handler(self, uuid):
+def error_handler(self, uuid):
         result = AsyncResult(uuid)
         ex = result.get(propagate=False)
         logging.exception(
             f"Task {uuid} raised exception: {ex}\n{result.traceback}")
 
+@tasks_bp.route('/<id>', methods=['GET'])
+def status(id):
+    from .wsgi_aux import app
+    with app.app_context():    
+        task = AsyncResult(id)
+        if task.state == 'PENDING':
+            # job did not start yet
+            response = {
+                'state': task.state,
+                'current': 0,
+                'total': 1,
+                'status': 'Pending...'
+            }
+        elif task.state != 'FAILURE':
+            response = {
+                'state': task.state,
+                'current': task.info.get('current', 0),
+                'total': task.info.get('total', 1),
+                'status': task.info.get('status', '')
+             }
+            if 'result' in task.info:
+                response['result'] = task.info['result']
+        else:
+            # something went wrong in the background job
+            response = {
+                'state': task.state,
+                'current': 1,
+                'total': 1,
+                'status': str(task.info),  # this is the exception raised
+             }
+        return jsonify(response)
 
 @tasks_bp.route('/status/<id>', methods=['GET'])
 def get_status(id):
@@ -33,6 +70,8 @@ def get_status(id):
 
 @celery.task(bind=True)
 def download_media(self, media_info):
+    from .wsgi_aux import app
+    with app.app_context():
             logger = get_task_logger(__name__)
             logger.info("Downloading {media_info}")
             plexsync = PlexSync()
@@ -103,15 +142,15 @@ def download_media(self, media_info):
 
                 with open(media_info["destination"], 'wb') as handle:
                     start = time.time()
-                    status = {      "current": 0,
+                    status_info = {      "current": 0,
                                     "total": total,
                                     "start": start,
                                     "status": "starting"
                                 }
                     iterationElapsed = time.time() - status_info["start"]
                     bytesPerSecond = math.floor(chunksize / iterationElapsed)
-                    etaSeconds = math.floor(int(status_info["bytes"]) / bytesPerSecond)
-                   status = {  "bytesPerSecond": bytesPerSecond,
+                    etaSeconds = math.floor(int(status_info["total"]) / bytesPerSecond)
+                    status = {  "bytesPerSecond": bytesPerSecond,
                                "iterationElapsed": iterationElapsed,
                                 "iterationStartTime": status_info["start"],
                                 "etaSeconds": etaSeconds
@@ -199,35 +238,26 @@ def compare_task(message,bind=True, throw=True):
 
 
 
-@celery.task()
-def transfer_task(message,bind=True, throw=True):
-    logger = get_task_logger(__name__)
+@celery.task(bind=True, throw=True)
+def transfer_task(self, message):
+    logger = getLogger("plexsync")
     logger.info(f"Starting Task {self.name}: {self.request.id} in Backend {self.backend}")
     from .wsgi_aux import app
     with app.app_context():
-              
-                
+
         serverName = message.get("server")
         sectionName = message.get("section")
         guid = message.get("guid")
 
         plexsync = PlexSync()
 
-        media_info = plexsync.buildMediaInfo()
-
-        signature = self.download_media.s()
-        download_task = signature.apply_async(args=[media_info])
+        media_info = plexsync.buildMediaInfo(serverName,sectionName,guid)
         
-
-                                    response = {
-                                        'guid': media_info["guid"],
-                                        'title': media_info["title"],
-                                        'task': download_task.id
-                                        'section': media_info.section
-                                        'title': media.title,
-                                        'folderPath': media_info["folderPath"],
-                                        'fileName': media_info["fileName"]
-                                        }
-                            
-        socketio.emit('transfer_started', {'message' : response}, namespace='/plexsync')
+        response = {"message": "Transfer Started"}
+        items = []
+        for x in media_info:
+            signature = download_media.s()
+            download_task = signature.apply_async(args=[x])
+            items.append({'task': download_task.id})
+        response["items"] = items
         return response

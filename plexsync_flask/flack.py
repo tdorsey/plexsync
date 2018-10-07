@@ -169,42 +169,33 @@ def transfer():
             section = theirServer.library.sectionByID(sectionID)
             result = section.search(guid=guid).pop()
         if authorized:
-                current_app.logger.debug(f"authorized")
-            try:
-                message = { "server" : theirServer.friendlyName,
-                            "section" : section,
-                            "guid" : guid  }
-                signature = transfer_task.s()
-                task = signature.apply_async(args=[message])
-                current_app.logger.debug(f"Compare Task: {task} ")
-                message["task"] = task.id
-            return jsonify(message)
- except Exception as e:
-                current_app.logger.exception(f"Exception {e}")
-                status = 500
-                response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+            current_app.logger.debug(f"authorized")
+            item = { "server" : theirServer.friendlyName,
+                     "section" : section.title,
+                     "guid" : guid  }
+            signature = transfer_task.s()
+            task = signature.apply_async(args=[item])
+            item["task"] = task.id
+            items = []
+            message = "Transfer started"
+            items.append(item)  
+            current_app.logger.debug(f"Transfer Task: {task} ")
+            current_app.logger.debug(f"Backend: {task.backend} ")
+            response = {"message": message, "items": items}
+            return jsonify(response)
+        else:
+                current_app.logger.debug(f"not authorized")
+                msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
+                status = 403
+                response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
                 response.status_code = status
                 return response
-            
-            msg = f"Transferring {len(transferred)} items to {currentUserServer}"
-            status = 202
-            response = jsonify(message = { "text" : msg, "severity" : "success" }, result=transferred, status=status)
-            response.status_code = status
-            return response
-        
-        else:
-            current_app.logger.debug(f"not authorized")
-            msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
-            status = 403
-            response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
-            response.status_code = status
-            return response
     except Exception as e:
-        current_app.logger.exception(f"Exception {e}")
-        status = 500
-        response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
-        response.status_code = status
-        return response
+                    current_app.logger.exception(f"Exception {e}")
+                    status = 500
+                    response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+                    response.status_code = status
+                    return jsonify(message)
 
 @main.route('/item/<string:serverName>/<string:sectionName>/<path:guid>', methods=['GET'])
 def renderSingleItemPath(serverName, sectionName, guid):
@@ -287,11 +278,6 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
         current_app.logger.debug(f"{len(results)} your diff")
 
     return jsonify(results)
-
-@main.route('/task/<task_id>')
-def taskstatus(task_id):
-    task = tasks.getTaskProgress(task_id)
-    return jsonify(task)
 
 def ack():
     current_app.logger.warning('message was received!')
