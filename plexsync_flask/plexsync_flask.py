@@ -1,24 +1,30 @@
-#!/usr/bin/python3
+import requests
+import threading
+import time
+import urllib.parse
+import logging
+
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
+
+from plexsync import PlexSync
+
+from . import db
+
+from .events import push_model
+from .models import User
+from .tasks import compare_task, emit_task, transfer_item, download_media
+
+main = Blueprint('main', __name__, template_folder='templates')
 
 
-def as_json():
-# If content type is application/json, return json, else render the template
-    # best = request.accept_mimetypes \
-    #     .best_match(['application/json', 'text/html'])
-    # return best == 'application/json' and \
-    #     request.accept_mimetypes[best] > \
-    #     request.accept_mimetypes['text/html']
-    if  request.args.get('json', None):
-         return True
-
-@app.route('/')
+@main.route('/')
 def index():
     if not request.script_root:
         # this assumes that the 'index' view function handles the path '/'
-        request.script_root = url_for('index', _external=True)
+        request.script_root = url_for('main.index', _external=True)
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
+@main.route('/login', methods=['POST'])
 def login():
     session['username'] = request.form['username']
     session['password'] = request.form['password']
@@ -26,11 +32,11 @@ def login():
     try:
         plexsync = PlexSync()
         plexsync.getAccount()
-        return redirect(url_for('home', _scheme='https', _external=True), code=303)
+        return redirect(url_for('main.home', _scheme='https', _external=True), code=303)
     except Exception as e:
-       return json.dumps(str(e))
+       return jsonify(str(e))
 
-@app.route('/home', methods=['GET'])
+@main.route('/home', methods=['GET'])
 def home():
    try:
         token = session['token']
@@ -46,23 +52,29 @@ def home():
    except KeyError:
         return redirect('/')
 
-@app.route('/pin/<string:pinId>', methods=['GET'])
+@main.route('/pin/redirect_to/<int:pin>', methods=['GET'])
+def getRedirectURL(pin):
+    forwardURL = url_for('main.exchangePinForAuth', pinId=pin, _scheme='https', _external=True )
+    current_app.logger.debug(f"Got forwardURL {forwardURL}")
+    return jsonify(forwardURL)
+
+@main.route('/pin/<string:pinId>', methods=['GET'])
 def exchangePinForAuth(pinId):
    try:
-     app.logger.debug(f"received pin id: {pinId}")
-     headers = {'X-Plex-Client-Identifier': 'plexsync'}
-     url = f"https://plex.tv/api/v2/pins/{pinId}.json"
-     r = requests.get(url=url, headers=headers )
-     token = r.json()['authToken']
-     session['token'] = token
-     app.logger.debug(f"Got auth token {token}")
-     return redirect(url_for('home'))
+        current_app.logger.debug(f"received pin id: {pinId}")
+        headers = {'X-Plex-Client-Identifier': 'plexsync'}
+        url = f"https://plex.tv/api/v2/pins/{pinId}.json"
+        r = requests.get(url=url, headers=headers )
+        token = r.json()['authToken']
+        session['token'] = token
+        current_app.logger.debug(f"Got auth token {token}")
+        return redirect(url_for('main.home'))
    except KeyError:
         return redirect('/')
 
-@app.route('/servers/<string:serverName>', methods=['GET','POST'])
+@main.route('/servers/<string:serverName>', methods=['GET','POST'])
 def sections(serverName):
-    app.logger.debug(f"routing for {serverName}")
+    current_app.logger.debug(f"routing for {serverName}")
     plexsync = PlexSync()
     plexsync.getAccount()
     server = plexsync.getServer(serverName)
@@ -74,11 +86,18 @@ def sections(serverName):
         result = {"id": section.key, "name": section.title, "type": section.type}
         section_list.append(result)
         sortedSections = sorted(section_list,key=lambda s: s.get("name"))
-    return json.dumps(sortedSections, ensure_ascii=False)
+    with current_app.app_context():
+        return jsonify(sortedSections)
 
-@app.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
+
+@main.route('/emit/<string:message>', methods=['GET','POST'])
+def emit(message):
+    s = emit_task.delay(message)
+    return jsonify(s.info)
+
+@main.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 def media(serverName, section):
-    app.logger.debug(f"routing for {serverName} - {section}")
+    current_app.logger.debug(f"routing for {serverName} - {section}")
     plexsync = PlexSync()
     plexsync.getAccount()
     
@@ -86,9 +105,10 @@ def media(serverName, section):
     results = plexsync.getResults(server, section)
 
     sortedResults = sorted([r.title for r in results])
-    return json.dumps(sortedResults, ensure_ascii=False)
+    with current_app.app_context():
+        return jsonify(sortedResults)
 
-@app.route('/search', methods=['POST'])
+@main.route('/search', methods=['POST'])
 def search():
     guid = request.form['guid']
     guid = urllib.parse.unquote(guid)
@@ -103,7 +123,7 @@ def search():
     response = plexsync.sendMediaToThirdParty(m)
     return render_template('third_party.html', message=response)
 
-@app.route('/download', methods=['POST'])
+@main.route('/download', methods=['POST'])
 def download():
     guid = request.form['guid']
     guid = urllib.parse.unquote(guid)
@@ -116,7 +136,7 @@ def download():
     result = section.search(guid=guid).pop()
     result.download()
 
-@app.route('/transfer', methods=['POST'])
+@main.route('/transfer', methods=['POST'])
 def transfer():
     try:
         server = request.form['server']
@@ -128,89 +148,95 @@ def transfer():
 
         ownedServers = plexsync.getOwnedServers()
         currentUserServer = session['yourServer']
-        app.logger.debug(f"ownedServers {ownedServers}")
-        app.logger.debug(f"currentServer {currentUserServer}")
+        current_app.logger.debug(f"ownedServers {ownedServers}")
+        current_app.logger.debug(f"currentServer {currentUserServer}")
         authorized = False
         for s in ownedServers:
             if s.friendlyName == currentUserServer:
-                app.logger.debug(f"authorized")
                 authorized = True
-
             theirServer = plexsync.getServer(server)
             section = theirServer.library.sectionByID(sectionID)
             result = section.search(guid=guid).pop()
         if authorized:
-            app.logger.debug("building task")
-            try:
-                transferred = plexsync.transfer(theirServer.friendlyName, sectionID, guid)
-                app.logger.debug(f"Transferred Results {transferred} Len: {len(transferred)}")
-            except Exception as e:
-                app.logger.exception(f"Exception {e}")
-                status = 500
-                response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+            current_app.logger.debug(f"authorized")
+            item = { "server" : theirServer.friendlyName,
+                     "section" : section.title,
+                     "guid" : guid  }
+
+            response = transfer_item(item)
+            return jsonify(response)
+
+        else:
+                current_app.logger.debug(f"not authorized")
+                msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
+                status = 403
+                response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
                 response.status_code = status
                 return response
-            
-            msg = f"Transferring {len(transferred)} items to {currentUserServer}"
-            status = 202
-            response = jsonify(message = { "text" : msg, "severity" : "success" }, result=transferred, status=status)
-            response.status_code = status
-            return response
-        
-        else:
-            app.logger.debug(f"not authorized")
-            msg = f"Not authorized to transfer {result.title} to {currentUserServer}"
-            status = 403
-            response =  jsonify(message= {"text" : msg, "severity" : "danger" }, status=status)
-            response.status_code = status
-            return response
     except Exception as e:
-        app.logger.exception(f"Exception {e}")
-        status = 500
-        response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
-        response.status_code = status
-        return response
-        
-@app.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
-@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:section>', methods=['GET'])
-@app.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionKey>', methods=['GET'])
+                    current_app.logger.exception(f"Exception {e}")
+                    status = 500
+                    response =  jsonify(message= {"text" : str(e), "severity" : "danger" }, status=status)
+                    response.status_code = status
+                    return jsonify(str(e))
+
+@main.route('/item/<string:serverName>/<string:sectionName>/<path:guid>', methods=['GET'])
+def renderSingleItemPath(serverName, sectionName, guid):
+            current_app.logger.info(f"Rendering GUID {guid}")
+            serverName = urllib.parse.unquote(serverName)
+            sectionName = urllib.parse.unquote(sectionName)
+            guid = urllib.parse.unquote(guid)
+            current_app.logger.warning(f"Unquoted: {guid}")
+            plexsync = PlexSync()
+            plexsync.getAccount()
+            server = plexsync.getServer(serverName)
+            section = plexsync.getSection(server, sectionName)
+            result = section.search(guid=guid).pop()
+            m = plexsync.prepareMediaTemplate(result)
+            return render_template('media.html', media=m)
+
+@main.route('/compare/<string:yourServerName>/<string:theirServerName>', methods=['GET'])
+@main.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:section>', methods=['GET'])
+@main.route('/compare/<string:yourServerName>/<string:theirServerName>/<string:sectionKey>', methods=['GET'])
 def compare(yourServerName, theirServerName, sectionKey=None):
     try:
-        plexsync = PlexSync()
-        plexsync.getAccount()
-        yourServer = plexsync.getServer(yourServerName)
-        theirServer = plexsync.getServer(theirServerName)
+        with current_app.app_context():
+            plexsync = PlexSync()
+            plexsync.getAccount()
+            yourServer = plexsync.getServer(yourServerName)
+            theirServer = plexsync.getServer(theirServerName)
 
-        section = plexsync.getSection(theirServer, sectionKey)
-        sectionName = section.title
+            section = plexsync.getSection(theirServer, sectionKey)
+            sectionName = section.title
 
-        session['yourServer'] = yourServerName
-        message = { "yourServer" : yourServerName,
+            session['yourServer'] = yourServerName
+            message = { "yourServer" : yourServerName,
                     "theirServer" : theirServerName,
                     "section" : sectionName  }
-        app.logger.debug("compare route hit")
 
-
-        app.logger.warning(f"{message}")
-        signature = compare_task.s()
-        task = signature.apply_async(args=[message])
-        app.logger.debug(f" result backend {task.backend}")
-        app.logger.debug(f"Compare Task: {task} ")
+            current_app.logger.warning(f"{message}")
+            signature = compare_task.s()
+            task = signature.apply_async(args=[message])
+            current_app.logger.debug(f" result backend {task.backend}")
+            current_app.logger.debug(f"Compare Task: {task} ")
       
-        message["task"] = task.id
-        return jsonify(message)
+            message["task"] = task.id
+            status_url = url_for('tasks.status', _scheme='https', _external=True, id=task.id)
+            message["status_url"] = status_url
+            return jsonify(message)
 
     except Exception as e:
-        app.logger.exception(e)
-        response = jsonify(str(e))
-        response.status_code = 500
-        return response
-    #if as_json():
-    #return jsonify(result_list)
-    #else:
-     #   return render_template('media.html', media=result_list)
+        with current_app.app_context():
+            current_app.logger.exception(e)
+            response = jsonify(str(e))
+            response.status_code = 500
+            return response
+#    if as_json():
+ #   return jsonify(result_list)
+  #  else:
+        return render_template('media.html', media=result_list)
 
-@app.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
+@main.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
 def compareResults(yourServerName, theirServerName, sectionName=None):
 
     plexsync = PlexSync()
@@ -232,50 +258,11 @@ def compareResults(yourServerName, theirServerName, sectionName=None):
 
         results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
 
-        app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
-        app.logger.debug(f"{len(results)} your diff")
+        current_app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
+        current_app.logger.debug(f"{len(results)} your diff")
 
     return jsonify(results)
 
-@app.route('/task/<task_id>')
-def taskstatus(task_id):
-    task = tasks.getTaskProgress(task_id)
-    return jsonify(task)
-
 def ack():
-    app.logger.warning('message was received!')
-
-def render_and_emit(message):
-    
-    server = message.get("server")
-    section = message.get("section")
-    guid = message.get("guid")
-
-    plexsync = PlexSync()
-    plexsync.getAccount()
-    theirServer = plexsync.getServer(server)
-    section = plexsync.getSection(theirServer, section)
-    result = section.search(guid=guid).pop()
-    template_data = plexsync.prepareMediaTemplate(result)
-
-    with app.app_context():
-        html = render_template('media.html', media=template_data)
-
-    #socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
-
-
-
-
-if __name__ == '__main__':
-    #https://stackoverflow.com/questions/26423984/unable-to-connect-to-flask-app-on-docker-from-host
-    app.logger.addHandler(logging.StreamHandler(sys.stdout))
-    app.logger.setLevel(logging.DEBUG)
-
-
-    socketio = SocketIO(app=app, message_queue=app.config['SOCKETIO_MESSAGE_QUEUE'])
-#This hangs serving the index page
-    socketio.run(app, debug=app.config['DEBUG'], host='0.0.0.0', port=5000)
-
-#This serves with eventlet warnings, but can't find the templates
-#    app.run(host='0.0.0.0', port=5000)
+    current_app.logger.warning('message was received!')
 

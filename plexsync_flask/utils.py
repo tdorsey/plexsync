@@ -1,6 +1,18 @@
-import time
+import logging, time
 
 from flask import url_for as _url_for, current_app, _request_ctx_stack
+
+logger = logging.getLogger(__name__)
+
+def timing(func):
+    def wrap(f):
+        start_time = time.time()
+        ret = func(f)
+        end_time = time.time()
+        elapsed = end_time - start_time
+        logger.debug(f"{ret.__name__} took {elapsed.microseconds * 1000} ms")
+        return ret
+    return wrap
 
 
 def timestamp():

@@ -5,12 +5,12 @@ from .models import User, Message
 from .auth import verify_token
 
 import logging
-psl = logging.getLogger("plexsync")
+log = logging.getLogger(__name__)
 
 from plexsync import PlexSync
 def dump(obj):
   for attr in dir(obj):
-    psl.warning("obj.%s = %r" % (attr, getattr(obj, attr)))
+    log.warning("obj.%s = %r" % (attr, getattr(obj, attr)))
 
 def push_model(model):
     """Push the model to all connected Socket.IO clients."""
@@ -18,14 +18,10 @@ def push_model(model):
                                     'model': model.to_dict()})
 
 
-@socketio.on('ping_user')
-def on_ping_user(token):
-    """Clients must send this event periodically to keep the user online."""
-    verify_token(token, add_to_session=True)
-    if g.current_user:
-        # Mark the user as still online
-        g.current_user.ping()
-
+@socketio.on_error_default
+def default_error_handler(e):
+    log.warning(request.event["message"]) # "my error event"
+    log.warning(request.event["args"])  
 
 @celery.task
 def post_message(user_id, data):
@@ -63,22 +59,9 @@ def on_post_message(data, token):
         post_message.apply_async(args=(g.current_user.id, data))
 
 
-@socketio.on('disconnect')
-def on_disconnect():
-    """A Socket.IO client has disconnected. If we know who the user is, then
-    update our state accordingly.
-    """
-    nickname = session.get('nickname')
-    if nickname:
-        # we have the nickname in the session, we can mark the user as offline
-        user = User.query.filter_by(nickname=nickname).first()
-        if user:
-            user.online = False
-            db.session.commit()
-            push_model(user)
-
 @socketio.on('comparison_done', namespace='/plexsync')
 def plexsync_message(message):
+    log.warning(f"Emitting comparison_done")
     socketio.emit(namespace='/plexsync')
 
 @socketio.on('render_template', namespace='/plexsync')
@@ -93,23 +76,13 @@ def render_template(message):
         guid = message.get("guid")
         result = section.search(guid=guid).pop()
         template_data = plexsync.prepareMediaTemplate(result)
-    #    html = '<h3>hello world</h3>'
         try:
-            psl.warning(f"Template {template_data}")
-            psl.warning(f"app render")
-
-
-            
+            log.debug(f"Template {template_data}")
             template = current_app.jinja_env.get_template("media.html")
             html = template.render(media=template_data)            
-
-            psl.warning(f"Jinja render {html}")
-            
-
             socketio.emit('template_rendered', {'html': html}, namespace='/plexsync')
-
         except Exception as e:
-            psl.exception(e)
+            log.exception(e)
     return
 
 @socketio.on('broadcast', namespace='/plexsync')
@@ -118,7 +91,7 @@ def plexsync_broadcast(message):
 
 @socketio.on('connect', namespace='/plexsync')
 def plexsync_connect():
-    socketio.emit('my response', {'data': 'Connected'})
+    log.warning(f"Client connected")
 
 @socketio.on('disconnect', namespace='/plexsync')
 def plexsync_disconnect():

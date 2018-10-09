@@ -1,4 +1,4 @@
-var $ = require('jquery');
+ var $ = require('jquery');
 var notify = require('./notify-helper');
 var progress = require('./progress-helper');
 var message = require('./message-helper');
@@ -6,7 +6,7 @@ var socket = require('./sockets');
 
 
 function onSelectSection(e) {
-    var that = this;
+    message.hide();
     var section = $(this).val();
     var server = $("#serverA").val();
     var endpoint = $`{SCRIPTROOT}/servers/{server}/{section}`;
@@ -20,15 +20,19 @@ function onTransferClick(obj) {
 
         var innerCardDeck = $(obj).parents(".card-deck");
         progressDiv = innerCardDeck.find(".progress");
+        let itemsInProgress = JSON.parse(localStorage.getItem("itemsInProgress")) || [];
+        item.task = response.task
+        itemsInProgress.push(item);
 
-        //start the transfer 
-        response.items.forEach(element => {
-            bar =  progress.createBar(element.task);
+        response.items.forEach(taskID => {
+            bar =  progress.createBar(taskID);
             bar.closest(".card").toggle(true);
 
             progressDiv.append(bar);
-            progress.updateBar(bar, element.task);
+            progress.updateBar(bar, taskID);
         });
+
+        localStorage.setItem("itemsInProgress", JSON.stringify(itemsInProgress));
         notify.showNotification("Transfer Started");
 
     }, function (response) {
@@ -38,6 +42,7 @@ function onTransferClick(obj) {
     );
 }
 function onSelectServer(e) {
+    message.hide();
     var server = $(this).val();
     var dropdownB = $("#serverB");
     $("#server1_collapse").show().text(`Collapse ${server}`);
@@ -64,6 +69,7 @@ function compareLibraries() {
     var sectionKey = $("#section").val();
     $("#comparison_title").text(`${serverB} has the following new ${section}`);
     $("#comparison_results").empty();
+    message.hide();
     var endpoint = '/compare/' + serverA + '/' + serverB + '/' + sectionKey;
     var compareRequest = $.ajax({ url: endpoint  }).done(function(response) {
 	console.log(response);
@@ -192,6 +198,7 @@ function resizeMediaDivs() {
 }
 
 $(document).ready(function () {
+    $(".jumbotron").after(progress.getTransfersInProgress());
     $(".server").prepend(new Option("Select a Server", null, true, true));
     $("#serverA").change(onSelectServer);
     $(".section").change(onSelectSection);

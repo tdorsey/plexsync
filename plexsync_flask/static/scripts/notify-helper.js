@@ -5,7 +5,6 @@ function showNotification(text, body) {
     doNotification(text,body);
 } else if (notify.isSupported()) {
     notify.requestPermission(onPermissionGranted, onPermissionDenied);
-    showNotification(text,body);
 } else if (!notify.isSupported()) {
     console.warn('Notifications are not supported in this browser');
 }

@@ -1,0 +1,8 @@
+{% extends "messages.html" %}
+{% block tasks%}
+<div class="row" id="{{ task.guid }}">
+    <div class="alert alert-{{ task.level }}" role="alert">
+        <p>{{ task.message }} Step {{task.current}} of {{task.total}}</p>
+    </div>
+</div>
+{% endblock %}

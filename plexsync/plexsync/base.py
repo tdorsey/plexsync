@@ -28,7 +28,7 @@ def getAccount(self, username=None, password=None, token=None):
 
 
 CONFIG_PATH = str(os.path.join('/config', 'config.ini'))
-log = logging.getLogger("plexsync")
+log = logging.getLogger(__name__)
 configParser = configparser.SafeConfigParser()
 log.info(f"Reading configuration from {CONFIG_PATH}")
 settings =  configParser.read(CONFIG_PATH)

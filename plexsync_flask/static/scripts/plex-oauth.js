@@ -1,4 +1,6 @@
-let $ = require('jquery')
+const $ = require('jquery')
+const message = require('./message-helper')
+
 const PLEX_API_URL = "https://plex.tv/api/v2/";
 const PLEX_OAUTH_URL = "https://app.plex.tv/auth#!"
 const PLEX_CREATE_PIN_URL = "https://plex.tv/api/v2/pins?strong=true"
@@ -64,11 +66,35 @@ const result = await $.ajax({
     dataType: 'json',
     always: function (data) {
         console.log(data) 
-        
+
     }
 });
 
 return result;
+}
+async function getForwardURL(pin) {
+
+
+       return fetch( `pin/redirect_to/${pin}`, {
+            headers:{
+                'Content-Type': 'application/json'
+            }
+
+
+        }).then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                message.danger(response.statusText, { "removeOthers" : true });
+                return null;
+            }
+            }).then(json => {
+                return json
+            }).catch(msg => {
+                console.error('Error:', msg);
+                message.danger(msg);
+                });
 }
 
 async function getToken() {
@@ -80,9 +106,9 @@ let code = pinCodeResponse.code
 
 let randomID = Math.floor(Math.random() * Math.floor(10));
 
+ let forwardUrl = await getForwardURL(pinCodeResponse.id);
 let params = {
-
-forwardUrl : `https://ps.rtd3.me/pin/${pinCodeResponse.id}`,
+forwardUrl : `${forwardUrl}`,
 pinID : pinCodeResponse.id,
 code : pinCodeResponse.code,
 'context[device][product]' : DEVICE_PRODUCT,

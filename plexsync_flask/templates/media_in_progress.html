@@ -1,0 +1,19 @@
+{% for m in media_list %}
+<div class="row" id="{{ m.guid }}">
+    <div class="col">
+        <img height="30px;" src="{{ m.image }}" alt="{{ m.title}}"/>
+    </div>
+    <div class="col">
+      <h5 class="title"> {{ m.title }} &nbsp; ({{ m.year }})</h5>
+    </div>
+    <div class="col">
+                <div class="progress" id={{ m.task }}/>
+    </div>
+    <div class="col">
+                <button type="button" data-item='{{ m.guid }}'
+                                      onclick="plexsync.onCancelTransferClick({{ m.task }})"
+                                      class="cancel btn btn-secondary float-sm-right">Cancel
+                </button>
+    </div>
+</div>
+{% endfor %}

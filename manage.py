@@ -78,7 +78,7 @@ class CeleryWorker(Command):
 
     def run(self, argv):
         ret = subprocess.call(
-            ['celery', 'worker', '-A', 'plexsync_flask.celery'] + argv)
+            ['celery', 'worker',  '-Ofair', '-A', 'plexsync_flask.celery'] + argv)
         sys.exit(ret)
 
 manager.add_command("celery", CeleryWorker())

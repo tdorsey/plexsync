@@ -14,6 +14,8 @@
     "exorcist": "^1.0.1",
     "jquery": "^3.3.1",
     "list.js": "^1.5.0",
+    "moment": "^2.22.2",
+    "mbps": "^1.0.0",
     "notifyjs": "^3.0.0",
     "octicons": "^7.3.0",
     "parcelify": "^2.2.0",

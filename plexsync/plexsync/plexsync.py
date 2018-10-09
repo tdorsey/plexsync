@@ -74,10 +74,9 @@ class PlexSync(Base):
     def getSection(self, server, section):
             return server.library.section(section)
 
-    def getResult(self, sectionID, guid):
-        section = self.server.library.sectionByID(sectionID)
+    def getResult(self, server, sectionID, guid):
+        section = server.library.sectionByID(sectionID)
         result = section.search(guid=guid)
-        log.debug(guid)
         return result
 
     def getResults(self, server, section):
@@ -129,13 +128,12 @@ class PlexSync(Base):
 
     def prepareMediaTemplate(self, result):
                 m = self.getAPIObject(result)
-
                 result_dict = {}
                 result_dict['title'] = m.title
                 result_dict['downloadURL'] = m.downloadURL
                 result_dict['overview'] = m.overview
                 result_dict['sectionID'] = m.librarySectionID
-                result_dict['year'] = m.year
+                result_dict['year'] = m.year 
                 result_dict['guid'] = urllib.parse.quote_plus(m.guid)
                 result_dict['server'] = result._server.friendlyName
                 if m.image and len(m.image) > 0:
@@ -257,7 +255,7 @@ class PlexSync(Base):
                 url = media._server.url(
                     f"{part.key}?download=1", includeToken=True)
                 log.debug(f"url: {url}")
-                renamed_file = f"{media.title} [{media.year}].{part.container}"
+                renamed_file = createFilenameForMedia(media)
                 log.debug(renamed_file)
                 downloaded_file = media.download(savepath=savepath)
                 log.debug(f"downloaded {renamed_file}")
