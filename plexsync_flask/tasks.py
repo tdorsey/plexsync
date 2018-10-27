@@ -94,6 +94,16 @@ def status(id):
              }
         return jsonify(response)
 
+@tasks_bp.route('/cancel/<string:taskID', methods=['DELETE']>
+def cancel(id):
+    from .wsgi_aux import app
+    with app.app_context():
+        task = AsyncResult(id, app=app.maybecelery)
+        msg = f"Cancelled task {id}"
+        task.update_state(state="USER_CANCELLED", meta = { message : msg })
+        logger = logging.getLogger(__name__).info(msg)
+        return jsonify(msg)
+
 @celery.task(bind=True)
 def download_media(self, media_info):
     from .wsgi_aux import app
@@ -162,7 +172,7 @@ def download_media(self, media_info):
                 start_time = datetime.datetime.now()
                 logger.info(f"Started at: {start_time}")
 
-                progress = {'task': self.request.id, 'bytesPerSecond': 0}
+                progress = {'task': self.request.id, 'bytesPerSecond': 0, 'fileName' : media_info["destination"]}
                 with open(media_info["destination"], 'wb') as handle:
                     for i, chunk in enumerate(response.iter_content(chunk_size=chunksize)):
                         if chunk:
