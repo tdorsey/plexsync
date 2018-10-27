@@ -31,7 +31,6 @@ function onComparisonDone(response) {
 }
 
 function onComparisonEventStep(response) {
-    console.log(response.step);
     socket = io.connect(`${location.protocol}//${document.domain}/plexsync`);
     message.showMessage(response.message, { "messageType" : response.level, "removeOthers" : true });
 }
