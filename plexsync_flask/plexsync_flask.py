@@ -186,7 +186,6 @@ def renderSingleItemPath(serverName, sectionName, guid):
             serverName = urllib.parse.unquote(serverName)
             sectionName = urllib.parse.unquote(sectionName)
             guid = urllib.parse.unquote(guid)
-            current_app.logger.warning(f"Unquoted: {guid}")
             plexsync = PlexSync()
             plexsync.getAccount()
             server = plexsync.getServer(serverName)
