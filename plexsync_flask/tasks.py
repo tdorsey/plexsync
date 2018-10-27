@@ -182,7 +182,7 @@ def download_media(self, media_info):
                 elapsed = finish_time - start_time
                 finish_seconds = elapsed.total_seconds()
 
-                logger.info(f"Finished {media_info['title']} at: {finish_time} in {finsh_seconds} seconds")
+                logger.info(f"Finished {media_info['title']} at: {finish_time} in {finish_seconds} seconds")
 
                 self.update_state(state='SUCCESS', meta=progress)
 
@@ -195,6 +195,7 @@ def render():
          serverName = json.get("server")
          sectionID = json.get("section")
          guids = json.get("guids")
+         task = json.get("task")
          if guids:
             plexsync = PlexSync()
             plexsync.getAccount()
@@ -210,6 +211,7 @@ def render():
                 result = section.search(guid=guid).pop()
             log.warning(f"Result found {result}" )
             template = plexsync.prepareMediaTemplate(result)
+            template["task"] = task
             log.warning(f"Template found {template}" )
             template_data.append(template)
          log.warning(f"Template data {template_data}")
