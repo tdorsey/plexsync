@@ -9,11 +9,10 @@ function createBar(barID) {
                                   role="progressbar" aria-valuemin="0" aria-valuemax="100">
                         <span class="progress-text"></span>
                 </div>`);
-
     return $(bar);
 }
 
-function updateBar(bar, taskGUID) {
+function updateBar(taskGUID) {
     doUpdate(taskGUID)
     interval = setInterval(doUpdate, 1 * 1000, [taskGUID]);
 
@@ -45,9 +44,7 @@ function doUpdate(taskGUID) {
                 etaDisplay = `${moment().add(response.eta,'seconds').fromNow()}`
                 speedDisplay = `${mbps(bytesPerSecond,1)}`;
                 tooltipText = `${etaDisplay} at ${speedDisplay}`;
-
-                var bar = $("#" + taskGUID);
-
+                var bar = $(".progress > .progress-bar");
                 bar.closest(".card").toggle(true);
                 bar.attr('aria-valuemin', 0);
                 bar.attr('aria-valuemax', 100);
@@ -84,7 +81,7 @@ function  getExistingTasks() {
         data.guids.push(item.guid);
         data.server = item.server;
         data.section = item.sectionID;
-        createBar(item.task)
+        data.task =  item.task;
     });
 
         fetch( "/task/render", {
@@ -105,10 +102,14 @@ function  getExistingTasks() {
             }
             }).then(text => {
                 $("#comparison_results").before(text);
-            }).catch(msg => {
+                barDiv = $(document).find(`div #${data.task}`);
+                bar = createBar(data.task);
+                barDiv.append(bar);
+                updateBar(data.task);
+         }).catch(msg => {
                 console.error('Error:', msg);
                 message.danger(msg);
-                });
+        });
 }
 
 exports.createBar = createBar;

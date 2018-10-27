@@ -21,15 +21,16 @@ function onTransferClick(obj) {
         var innerCardDeck = $(obj).parents(".card-deck");
         progressDiv = innerCardDeck.find(".progress");
         let itemsInProgress = JSON.parse(localStorage.getItem("itemsInProgress")) || [];
-        item.task = response.task
-        itemsInProgress.push(item);
-
+      
         response.items.forEach(taskID => {
+            item.task = taskID
+            itemsInProgress.push(item);
+
             bar =  progress.createBar(taskID);
             bar.closest(".card").toggle(true);
 
             progressDiv.append(bar);
-            progress.updateBar(bar, taskID);
+            progress.updateBar(taskID);
         });
 
         localStorage.setItem("itemsInProgress", JSON.stringify(itemsInProgress));
