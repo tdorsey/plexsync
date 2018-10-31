@@ -13,9 +13,9 @@ function createBar(barID) {
 }
 
 function updateBar(taskGUID) {
-    doUpdate(taskGUID)
-    interval = setInterval(doUpdate, 1 * 1000, [taskGUID]);
-
+    doUpdate(taskGUID);
+    interval = setInterval(doUpdate, 1 * 1000, taskGUID);
+    return interval;
     }
 
 
@@ -29,22 +29,31 @@ function updateBarTooltip(bar, opts) {
 
 }
 
-function doUpdate(taskGUID) {
+async function doUpdate(taskGUID) {
 
-        $.ajax({
-            type: "GET",
-            url: `/task/${taskGUID}` }).done(
-                function(response, textStatus)  {
-                total = response.total;
-                current = response.current;
-                statusText = response.status;
-                statusPercentage = Math.floor(response.percent);
-                bytesPerSecond = Math.round(response.bytesPerSecond);
+    let updateResponse = await fetch(`/task/${taskGUID}`);
+     if (updateResponse.ok) {
+            let response = await updateResponse.json()
+               var bar = $(`#${taskGUID}`);
+                if (response.state == "PENDING") {
+                    bar.children(".progress-text").text("Waiting to start");
+                    return;
+                }
+
+                if (!response.info) {
+                    clearTaskInterval(taskGUID);
+                }
+
+
+                total = response.info.total;
+                current = response.info.current;
+                statusText = response.info.status;
+                statusPercentage = Math.floor(response.info.percent);
+                bytesPerSecond = Math.round(response.info.bytesPerSecond);
                 statusPercentageDisplay = `${statusPercentage}%`;
-                etaDisplay = `${moment().add(response.eta,'seconds').fromNow()}`
+                etaDisplay = `${moment().add(response.info.eta,'seconds').fromNow()}`
                 speedDisplay = `${mbps(bytesPerSecond,1)}`;
                 tooltipText = `${etaDisplay} at ${speedDisplay}`;
-                var bar = $(".progress > .progress-bar");
                 bar.closest(".card").toggle(true);
                 bar.attr('aria-valuemin', 0);
                 bar.attr('aria-valuemax', 100);
@@ -55,63 +64,97 @@ function doUpdate(taskGUID) {
                 bar.width(statusPercentageDisplay);
                 bar.children(".progress-text").text(statusPercentageDisplay);
 
-                if (response.state && response.state == "SUCCESS") {
+                if (response.info.state && response.info.state == "SUCCESS") {
 
-                    clearInterval(interval);
-                    notify.showNotification("Transfer Completed", response.message);
-
+                    clearTaskInterval(taskGUID);
+                    notify.showNotification("Transfer Completed", response.info.message);
                 }
-            }).fail(function(response, status){
-                clearInterval(interval);
-                message.danger(response.responseText);
+     }       
+      else {
+                clearInterval(taskGUID);
+                message.danger(updateResponse.statusCode);
+                }
+        }
+
+async function cancelUpdate(taskID) {
+    let cancelResponse = await fetch(`/task/${taskID}`, { method: 'DELETE'} );
+    if (cancelResponse.ok) {
+        let json = await cancelResponse.json();
+        clearTaskInterval(taskID);
+        localStorage.removeItem(taskID);
+        $("div #" + taskID).parents(".row").remove();
+    }
+}
+
+function clearTaskInterval(taskID) {
+
+    if (taskID) {
+        let storedItem = localStorage.getItem(taskID);
+        if (storedItem) {
+            let task = JSON.parse(storedItem);
+            if (task && task.interval) {
+                clearInterval(task.interval);
+            }
+        }
+    }
+}
+
+
+async function renderItemInProgress(i) {
+    let item = JSON.parse(localStorage.getItem(i));
+    if (!item) {
+        console.log(`Couldn't get item ${i} from local storage`);
+        return;
+    }
+
+    let data = { "guids": [] };
+
+    data.guids.push(item.guid);
+    data.server = item.server;
+    data.section = item.sectionID;
+    data.task =  item.task;
+
+    let statusResponse = await fetch(`/task/${data.task}`, {
+        headers: { 'Content-Type': 'application/json'}
+    });
+
+    if (statusResponse.ok) {
+        let status = await statusResponse.json();
+        if (status.state == "ABORTED") {
+            localStorage.removeItem(data.task);
+        }
+        else {
+            let renderResponse = await fetch("/task/render", {
+                    method: 'POST',
+                    body: JSON.stringify(data), 
+                    headers: { 'Content-Type': 'application/json' }
             });
 
+            let text = await renderResponse.text();
 
-
+            if (text) {
+                $("#comparison_results").before(text);
+                barDiv = $(document).find(`#${data.task}-container`);
+                bar = createBar(data.task);
+                barDiv.append(bar);
+                updateBar(data.task);
+            }
         }
-function  getExistingTasks() {
+    }
+}
+
+async function  getExistingTasks() {
     items = JSON.parse(localStorage.getItem("itemsInProgress"));
         if (!items) {
             return
         }
-    let data = {};
-    data.guids =  [];
 
-    items.forEach(item => {
-        data.guids.push(item.guid);
-        data.server = item.server;
-        data.section = item.sectionID;
-        data.task =  item.task;
-    });
-
-        fetch( "/task/render", {
-            method: 'POST',
-            body: JSON.stringify(data), // data can be `string` or {object}!
-            headers:{
-                'Content-Type': 'application/json'
-            }
-
-
-        }).then(response => {
-            if (response.ok) {
-                return response.text();
-            }
-            else {
-                message.danger(response.statusText);
-                return null;
-            }
-            }).then(text => {
-                $("#comparison_results").before(text);
-                barDiv = $(document).find(`div #${data.task}`);
-                bar = createBar(data.task);
-                barDiv.append(bar);
-                updateBar(data.task);
-         }).catch(msg => {
-                console.error('Error:', msg);
-                message.danger(msg);
-        });
+    for (const i of items) {
+      renderItemInProgress(i);
+    }
 }
 
 exports.createBar = createBar;
 exports.updateBar = updateBar;
 exports.getTransfersInProgress = getExistingTasks;
+exports.cancelUpdate = cancelUpdate;

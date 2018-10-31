@@ -4,6 +4,7 @@ from .comparison_task import ComparisonTask
 
 from plexsync import PlexSync
 
+from celery.contrib.abortable import AbortableTask,AbortableAsyncResult
 from celery import states, group
 from celery.result import AsyncResult, GroupResult
 from celery.utils.log import get_task_logger
@@ -50,61 +51,56 @@ def updateProgress(pbar, extra):
     return progress
 
 
-@tasks_bp.route('/<id>', methods=['GET'])
+@tasks_bp.route('/<id>', methods=['GET', 'DELETE'])
 def status(id):
+    logger = logging.getLogger(__name__)
     from .wsgi_aux import app
     with app.app_context():
-        task = AsyncResult(id, app=app.maybecelery)
+        task = AbortableAsyncResult(id, app=app.maybecelery)
         group_task = GroupResult.restore(id, app=app.maybecelery)
-        logger = logging.getLogger(__name__)
-        if group_task:
-            logger.debug(f"Group task: {group_task}")
-            logger.debug(f"Children task count: { len(group_task.children) }")
-
-        if task.state == 'PENDING':
-            # job did not start yet
-            response = {
-                'state': task.state,
-                'current': 0,
-                'total': 1,
-                'percent': 0,
-                'status': 'Pending...'
-            }
-        elif task.state == 'DOWNLOADING':
-            response = {
-                'state': task.state,
-                'current': task.info.get('current', 0),
-                'total': task.info.get('total', 1),
-                'eta': task.info.get('eta', ''),
-                'bytesPerSecond': task.info.get('bytesPerSecond', ''),
-                'percent': task.info.get('percent', '')
-             }
-            if 'result' in task.info:
-                response['result'] = task.info['result']
-        elif task.state != 'FAILURE':
-            logger.warning(f"task info {task.info}")
-            response = { 'state': task.state, 'info' : task.info }
+        if request.method == 'DELETE':
+            task.abort()
+            msg = f"Cancelling task {id}"
+            logger.warning(msg)
+            return jsonify(msg)
         else:
-            # something went wrong in the background job
-            response = {
-                'state': task.state,
-                'current': 1,
-                'total': 1,
-                'status': str(task.info),  # this is the exception raised
+            if group_task:
+                logger.debug(f"Group task: {group_task}")
+                logger.debug(f"Children task count: { len(group_task.children) }")
+            if task.state == 'PENDING':
+                # job did not start yet
+                response = {
+                    'state': task.state,
+                    'current': 0,
+                    'total': 1,
+                    'percent': 0,
+                    'status': 'Pending...'
+                }
+            elif task.state == 'DOWNLOADING':
+                response = {
+                    'state': task.state,
+                    'current': task.info.get('current', 0),
+                    'total': task.info.get('total', 1),
+                    'eta': task.info.get('eta', ''),
+                    'bytesPerSecond': task.info.get('bytesPerSecond', ''),
+                    'percent': task.info.get('percent', '')
              }
-        return jsonify(response)
+            if task.info and task.info.get('result'):
+                response['result'] = task.info['result']
+            elif task.state != 'FAILURE':
+                logger.warning(f"task info {task.info}")
+                response = { 'state': task.state, 'info' : task.info }
+            else:
+                # something went wrong in the background job
+                response = {
+                    'state': task.state,
+                    'current': 1,
+                    'total': 1,
+                    'status': str(task.info),  # this is the exception raised
+                 }
+            return jsonify(response)
 
-@tasks_bp.route('/cancel/<string:taskID', methods=['DELETE']>
-def cancel(id):
-    from .wsgi_aux import app
-    with app.app_context():
-        task = AsyncResult(id, app=app.maybecelery)
-        msg = f"Cancelled task {id}"
-        task.update_state(state="USER_CANCELLED", meta = { message : msg })
-        logger = logging.getLogger(__name__).info(msg)
-        return jsonify(msg)
-
-@celery.task(bind=True)
+@celery.task(bind=True, base=AbortableTask)
 def download_media(self, media_info):
     from .wsgi_aux import app
     with app.app_context():
@@ -183,10 +179,14 @@ def download_media(self, media_info):
                                 bytes_per_second = 0
                             pbar.next()
                         if i % 10 == 0:
-                            extra_info = {'bytesPerSecond': bytes_per_second }
-                            progress.update(updateProgress(pbar, extra_info))
-                            progress.update()
-                            self.update_state(state='DOWNLOADING', meta=progress)
+                            if self.is_aborted():
+                                logger.info(f"Task {self.request.id} requested Abort. Removing {handle.filename}")
+                                handle.close();
+                                os.remove(handle.filename)
+                        extra_info = {'bytesPerSecond': bytes_per_second }
+                        progress.update(updateProgress(pbar, extra_info))
+                        progress.update()
+                        self.update_state(state='DOWNLOADING', meta=progress)
                 pbar.finish()
                 finish_time = datetime.datetime.now()
                 elapsed = finish_time - start_time
@@ -196,7 +196,7 @@ def download_media(self, media_info):
 
                 self.update_state(state='SUCCESS', meta=progress)
 
-                return meta
+                return progress
 
 
 @tasks_bp.route('/render', methods=['POST'])
@@ -233,6 +233,7 @@ def render():
 def emit_task(message):
     from .wsgi_aux import app
     with app.app_context():
+
         socketio.emit(message, namespace="/plexsync")
 
 

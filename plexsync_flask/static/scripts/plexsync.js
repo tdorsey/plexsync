@@ -14,26 +14,29 @@ function onSelectSection(e) {
 
 function onTransferClick(obj) {
 
-    item = $(obj).data("item");
-    transfer(item).then(function (response) {
+    let data = $(obj).data("item");
+    transfer(data).then(function (response) {
         //display the progress bar
 
         var innerCardDeck = $(obj).parents(".card-deck");
         progressDiv = innerCardDeck.find(".progress");
         let itemsInProgress = JSON.parse(localStorage.getItem("itemsInProgress")) || [];
-      
+        //store the item in local storage, keyed by its task guid
         response.items.forEach(taskID => {
-            item.task = taskID
-            itemsInProgress.push(item);
+            updateInterval = progress.updateBar(taskID);
+
+            itemsInProgress.push(taskID);
+            data.task = taskID;
+            data.interval = updateInterval;
+            localStorage.setItem("itemsInProgress", JSON.stringify(itemsInProgress));
+            localStorage.setItem(taskID, JSON.stringify(data));
 
             bar =  progress.createBar(taskID);
             bar.closest(".card").toggle(true);
 
             progressDiv.append(bar);
-            progress.updateBar(taskID);
         });
 
-        localStorage.setItem("itemsInProgress", JSON.stringify(itemsInProgress));
         notify.showNotification("Transfer Started");
 
     }, function (response) {
@@ -41,7 +44,13 @@ function onTransferClick(obj) {
         message.danger(msg);
     }
     );
+
 }
+
+function onCancelTask(taskID) {
+    progress.cancelUpdate(taskID);
+}
+
 function onSelectServer(e) {
     message.hide();
     var server = $(this).val();
@@ -223,3 +232,4 @@ exports.transfer = transfer
 exports.compareLibraries = compareLibraries
 exports.resizeMediaDivs = resizeMediaDivs
 exports.onTransferClick = onTransferClick
+exports.onCancelTask = onCancelTask

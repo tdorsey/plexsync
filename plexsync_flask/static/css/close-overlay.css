@@ -1,0 +1,45 @@
+.progress-overlay {
+  border-radius: 8px;
+  position: relative;
+  width: 80%;
+  height: 100%;
+  color: #024457;
+  font-family: Arial;
+  z-index: 1001;
+  background: #f2f7f7;
+}
+
+.progress-overlay > .progress-close {
+  position: absolute;
+  top: auto;
+  bottom: auto;
+  right: -1%;
+  width: 30px;
+  height: 30px;
+  content: "";
+}
+.progress-overlay > .progress-close:before {
+  position: absolute;
+  content: "";
+  width: 26px;
+  height: 26px;
+  top: 0px;
+  left: 0px;
+}
+.progress-overlay > .progress-close:after {
+  position: absolute;
+  content: "\1F5D9";
+  font-family: "Tahoma Bold","Calibri Bold","Arial Black","Arial Bold",helvetica,"Lucida Sans","Trebuchet MS",sans-serif;
+  font-weight: bold;
+  font-size: 1.2em;
+  color: gray;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 30px;
+}
+
+
+
