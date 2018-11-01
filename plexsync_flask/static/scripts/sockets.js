@@ -4,7 +4,7 @@ var urlencode = require("urlencode");
 var message = require('./message-helper');
 
 function onComparisonDone(response) {
-        console.log("received comparison_done")
+        console.log("received comparison SUCCESS")
         let item = {"server" : response.message.server,
                        "section" : response.message.section  };
         item.server = urlencode.encode(item.server);
@@ -52,7 +52,6 @@ function onTemplateRendered(response) {
     socket.on('FINALIZING', onComparisonEventStep);
     socket.on('INTIALIZING', onComparisonEventStep);
     socket.on('CONNECTING', onComparisonEventStep);
-
     socket.on('SUCCESS', onComparisonDone);
 
 

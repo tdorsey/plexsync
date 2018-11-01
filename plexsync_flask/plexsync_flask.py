@@ -12,7 +12,7 @@ from . import db
 
 from .events import push_model
 from .models import User
-from .tasks import compare_task, emit_task, transfer_item, download_media
+from .tasks import compare_task, transfer_item, download_media
 
 main = Blueprint('main', __name__, template_folder='templates')
 

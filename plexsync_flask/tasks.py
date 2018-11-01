@@ -229,15 +229,6 @@ def render():
 
          return html
 
-@celery.task()
-def emit_task(message):
-    from .wsgi_aux import app
-    with app.app_context():
-
-        socketio.emit(message, namespace="/plexsync")
-
-
-
 def update_and_emit(task, state, message, step=None, total_steps=None, message_level="info"):
     from .wsgi_aux import app
     with app.app_context():
@@ -273,7 +264,6 @@ def compare_task(self, message):
         update_and_emit(self, "FINALIZING", str(f"Found {len(results)} new results on {theirServerName}"), message_level="SUCCESS", step=7, total_steps=totalSteps)
         message = { "server" : theirServerName, "section" : sectionName, "items" : guids }
         update_and_emit(self, "SUCCESS", message, message_level="SUCCESS", step=8, total_steps=totalSteps)
-        socketio.emit('comparison_done', {'message' : message}, namespace='/plexsync')
         log = get_task_logger(__name__).warning("Comparison done")
         return message
 
