@@ -36,22 +36,6 @@ html, body {height:100%}
     opacity: 0.5;
 }    
 
-#plex-oauth a >  img {
-
-    display: inline-block;
-    vertical-align: middle;
-    padding: 5px;
-    background-image : images/plex-logo.png;
-
-    width: 100%; /* or any custom size */
-    height: 100%; 
-    object-fit: contain;
-}
-#plex-oauth {
-    max-width: 25%;
-}
-
-
 .progress, .progress-bar {
     height: 100%;
 }

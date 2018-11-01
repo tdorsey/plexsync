@@ -1,0 +1,12 @@
+#plex-button > #plex-oauth  {
+
+    postion: relative;
+    width: auto;
+    height: 50px;
+    background-image: url("images/plex-logo.png") norepeat center center;
+    objectfit: contain;
+}
+
+#plex-button span {
+    vertical-align: middle;
+}
