@@ -1,5 +1,8 @@
-#plex-button > #plex-oauth  {
+#plex-button {
+    width: 100%;
+}
 
+#plex-button > #plex-oauth  {
     postion: relative;
     width: auto;
     height: 50px;
@@ -7,6 +10,6 @@
     objectfit: contain;
 }
 
-#plex-button span {
+#plex-button > span {
     vertical-align: middle;
 }

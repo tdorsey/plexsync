@@ -5,7 +5,7 @@ let pin = null;
 
 $(document).ready(function(){
 
-	$("#plex-oauth").click(function(e) {
+	$("#plex-button").click(function(e) {
 
 		login.getToken().then( function(token) {
 			console.log(token);

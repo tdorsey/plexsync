@@ -1,12 +1,24 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="container">
-    <h1>Login</h1>
-    <form method="post" action="{{ url_for('main.login') }}">
-        <div class="row"><label>Username:</label> <input type="text" name="username" required></div>
-        <div class="row"><label>Password:</label> <input type="password" name="password"></input></div>
-        <div class="row"><button type="submit">Login</button></div>
-    </form>
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Login</h1>
+            <form method="post" action="{{ url_for('main.login') }}">
+                <div class="form-group">
+                    <label for="username">Username:</label> 
+                    <input class="form-control" placeholder="Enter your Plex username" type="text" name="username" required />
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input class="form-control" placeholder="Enter your Plex password" type="password" name="password" required />
+                </div>
+                <div class="form-group">
+                    <button type="submit">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="row">
 	    <div class="col-md-12">
 	        <button id="plex-button" type="submit" class="btn btn-light">
