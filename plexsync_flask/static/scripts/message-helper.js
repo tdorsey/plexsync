@@ -120,6 +120,11 @@ function showMessage(message, options) {
     messageDiv.toggle(true);
     messageDiv.text(message);
 
+    if (options.style) {
+        messageDiv.addClass(options.style); 
+    }
+
+
 }
 
 var message = {

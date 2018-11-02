@@ -32,7 +32,14 @@ function onComparisonDone(response) {
 
 function onComparisonEventStep(response) {
     socket = io.connect(`${location.protocol}//${document.domain}/plexsync`);
-    message.showMessage(response.message, { "messageType" : response.level, "removeOthers" : true });
+    let style = null;
+    if (response.level.toLowerCase() != "success") {
+        style = "loading";
+    }
+        message.showMessage(response.message, { "messageType" : response.level,
+                                                "removeOthers" : true,
+                                                "style" : style });
+
 }
 
 function onTemplateRendered(response) {
