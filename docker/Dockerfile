@@ -12,6 +12,9 @@ RUN mkdir /downloads # && chown -R plexsync:plexsync /downloads && chmod -R 770 
 RUN mkdir /logs # && chown -R plexsync:plexsync /logs && chmod -R 770 /logs
 RUN mkdir /config # && chown -R plexsync:plexsync /config && chmod -R 777 /config
 
+#Copy plexsync config
+COPY plexsync/config/config.ini /config 
+
 ENTRYPOINT ["/entrypoint.sh"]
 COPY entrypoint.sh /entrypoint.sh
 

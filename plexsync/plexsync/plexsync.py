@@ -38,8 +38,7 @@ class PlexSync(Base):
             self.movie_provider = ThirdParty(ThirdPartyService.Movie)
         else:
             log.info(f"{ThirdPartyService.Movie.value} disabled")
-        self.account = self.getAccount()
-        log.info(f"Account Init: {self.account}")
+        self.account = None
         self.servers = None
 
     @staticmethod

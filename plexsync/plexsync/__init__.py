@@ -1,6 +1,6 @@
 import logging
 from .plexsync import PlexSync
-log = logging.getLogger("plexsync")
+log = logging.getLogger(__name__)
 
 
 # Logging Configuration
