@@ -1,8 +1,6 @@
 from flask import g, session, render_template, current_app
 
-from . import db, socketio, celery
-from .models import User, Message
-from .auth import verify_token
+from . import socketio, celery
 
 import logging
 log = logging.getLogger(__name__)
@@ -35,20 +33,15 @@ def post_message(user_id, data):
 
         # Write the message to the database
         msg = Message.create(data, user=user, expand_links=False)
-        db.session.add(msg)
-        db.session.commit()
 
         # broadcast the message to all clients
         push_model(msg)
 
         if msg.expand_links():
-            db.session.commit()
 
             # broadcast the message again, now with links expanded
             push_model(msg)
 
-        # clean up the database session
-        db.session.remove()
 
 
 @socketio.on('post_message')

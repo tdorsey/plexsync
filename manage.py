@@ -8,7 +8,7 @@ eventlet.monkey_patch()
 
 from flask_script import Manager, Command, Server as _Server, Option
 
-from plexsync_flask import create_app, db, socketio
+from plexsync_flask import create_app, socketio
 
 manager = Manager(create_app)
 
@@ -82,14 +82,6 @@ class CeleryWorker(Command):
         sys.exit(ret)
 
 manager.add_command("celery", CeleryWorker())
-
-
-@manager.command
-def createdb(drop_first=False):
-    """Creates the database."""
-    if drop_first:
-        db.drop_all()
-    db.create_all()
 
 
 @manager.command

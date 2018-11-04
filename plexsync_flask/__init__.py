@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
 from celery import Celery
@@ -10,7 +9,6 @@ import sys
 from config import config, Config
 
 # Flask extensions
-db = SQLAlchemy()
 bootstrap = Bootstrap()
 socketio = SocketIO()
 celery = Celery(__name__,
@@ -19,9 +17,6 @@ celery = Celery(__name__,
                 broker=Config.CELERY_CONFIG['CELERY_BROKER_URL'],
                 backend=Config.CELERY_CONFIG['CELERY_RESULT_BACKEND'])
 celery.config_from_object('celeryconfig')
-
-# Import models so that they are registered with SQLAlchemy
-from . import models  # noqa
 
 # Import celery task so that it is registered with the Celery workers
 from .tasks import *
@@ -45,7 +40,6 @@ def create_app(config_name=None, main=True):
 
 
     # Initialize flask extensions
-    db.init_app(app)
     bootstrap.init_app(app)
     if main:
         # Initialize socketio server and attach it to the message queue, so

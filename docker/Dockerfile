@@ -66,7 +66,6 @@ WORKDIR /plexsync_flask
 
 
 COPY plexsync_flask/ plexsync_flask/
-RUN python manage.py createdb
 
 COPY plexsync_flask/static/ plexsync_flask/static/
 COPY plexsync_flask/templates/ plexsync_flask/templates/
