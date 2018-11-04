@@ -46,7 +46,7 @@ python-engineio==2.2.0
 python-socketio==2.0.0
 pytz==2018.5
 redis==2.10.6
-requests==2.19.1
+requests>=2.20.0
 requests-toolbelt==0.8.0
 six==1.11.0
 socketio-client==0.7.2
