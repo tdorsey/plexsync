@@ -8,10 +8,9 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 
 from plexsync import PlexSync
 
+from .tasks import compare_task, download_media
 
-from .events import push_model
-from .tasks import compare_task, transfer_item, download_media
-
+from .api.tasks import transfer_item
 main = Blueprint('main', __name__, template_folder='templates')
 
 
@@ -221,7 +220,7 @@ def compare(yourServerName, theirServerName, sectionKey=None):
             current_app.logger.debug(f"Compare Task: {task} ")
       
             message["task"] = task.id
-            status_url = url_for('tasks.status', _scheme='https', _external=True, id=task.id)
+            status_url = url_for('api.status', _scheme='https', _external=True, id=task.id)
             message["status_url"] = status_url
             return jsonify(message)
 
