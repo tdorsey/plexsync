@@ -1,4 +1,5 @@
-from flask import Blueprint, abort, g, request, current_app, render_template, jsonify, session
+from . import api
+from flask import Blueprint, abort, g, request, current_app, render_template, jsonify, url_for
 from .comparison_task import ComparisonTask
 
 
@@ -13,9 +14,7 @@ import logging, urllib.parse
 
 from progress.bar import Bar
 
-from . import celery, socketio
-
-from .utils import url_for, timing
+from .. import celery, socketio
 
 import math, datetime, logging
 tasks_bp = Blueprint('tasks', __name__)
@@ -51,6 +50,53 @@ def updateProgress(pbar, extra):
     return progress
 
 
+@api.route('task/<id>', methods=['GET', 'DELETE'])
+def status(id):
+    logger = logging.getLogger(__name__)
+    from ..wsgi_aux import app
+    with app.app_context():
+        task = AbortableAsyncResult(id, app=app.maybecelery)
+        group_task = GroupResult.restore(id, app=app.maybecelery)
+        if request.method == 'DELETE':
+            task.abort()
+            msg = f"Cancelling task {id}"
+            logger.warning(msg)
+            return jsonify(msg)
+        else:
+            if group_task:
+                logger.debug(f"Group task: {group_task}")
+                logger.debug(f"Children task count: { len(group_task.children) }")
+            if task.state == 'PENDING':
+                # job did not start yet
+                response = {
+                    'state': task.state,
+                    'current': 0,
+                    'total': 1,
+                    'percent': 0,
+                    'status': 'Pending...'
+                }
+            elif task.state == 'DOWNLOADING':
+                info = {
+                    'current': task.info.get('current', 0),
+                    'total': task.info.get('total', 1),
+                    'eta': task.info.get('eta', ''),
+                    'bytesPerSecond': task.info.get('bytesPerSecond', ''),
+                    'percent': task.info.get('percent', '')
+                }
+                response = { 'state' : task.state, 'info' : info }
+            elif task.state != 'FAILURE':
+                logger.warning(f"task info {task.info}")
+                response = { 'state': task.state, 'info' : task.info }
+            else:
+                # something went wrong in the background job
+                response = {
+                    'state': task.state,
+                    'current': 1,
+                    'total': 1,
+                    'status': str(task.info),  # this is the exception raised
+                 }
+            return jsonify(response)
+
 @celery.task(bind=True, base=AbortableTask)
 def download_media(self, media_info):
     from .wsgi_aux import app
@@ -59,7 +105,6 @@ def download_media(self, media_info):
             logger.setLevel(logging.DEBUG)   
             logger.info("Downloading {media_info}")
             plexsync = PlexSync()
-            plexsync.getAccount()
             guid = media_info.get("guid")
             serverName = media_info.get("server")
             sectionID = media_info.get("section")
@@ -151,7 +196,7 @@ def download_media(self, media_info):
                 return progress
 
 
-@tasks_bp.route('/render', methods=['POST'])
+@api.route('/render', methods=['POST'])
 def render():
          json = request.get_json()
          serverName = json.get("server")
@@ -168,7 +213,7 @@ def render():
             guid = urllib.parse.unquote(guid)
             log.warning(f"guid: {guid}")
             if section.type == "show":
-                result = section.search(guid=guid).pop()
+                result = section.searchEpisodes(guid=guid).pop()
             elif section.type == "movie":
                 result = section.search(guid=guid).pop()
             log.warning(f"Result found {result}" )
@@ -179,16 +224,14 @@ def render():
          log.warning(f"Template data {template_data}")
          html = render_template('media_in_progress.html', media_list=template_data)
 
-         return html
+         return template_data
 
 def update_and_emit(task, state, message, step=None, total_steps=None, message_level="info"):
     from .wsgi_aux import app
     with app.app_context():
-        room = task.request.id
         status_url = url_for('api.status', id=task.request.id)
         meta = {'status_url': status_url, 'level' : message_level,'current': step, 'total': total_steps, 'message': message}
         task.update_state(state=state, meta=meta)
-        log.warning(f"Emitting {state} to client {room}")
         socketio.emit(state, meta, namespace='/plexsync')
 
 
@@ -222,4 +265,32 @@ def compare_task(self, message):
         return message
 
 
+def transfer_item(message):
+    logger = logging.getLogger(__name__)
+    from .wsgi_aux import app
+    with app.app_context():
 
+        serverName = message.get("server")
+        sectionName = message.get("section")
+        guid = message.get("guid")
+
+        plexsync = PlexSync()
+        plexsync.getAccount()
+
+        media_info = plexsync.buildMediaInfo(serverName,sectionName,guid)
+        
+        items = []
+        tasks = []
+        for x in media_info:
+            signature = download_media.s(x)
+            logger.debug(f"signature {signature}")
+            tasks.append(signature)
+
+        group_result = group(tasks).apply_async()
+        for x in group_result.children:
+            items.append(x.id)
+#        for x in tasks:
+        logger.critical(f"group task: {group_result.id}") 
+        response = {"message": "Transfer Started", "task":  group_result.id, "items" : items}
+        logger.debug("Items: {items}")
+        return response

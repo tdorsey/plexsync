@@ -1,5 +1,6 @@
 $ = require('jquery');
 message = require('./message-helper');
+notify = require('./notify-helper');
 mbps = require('mbps');
 moment = require('moment');
 
@@ -31,7 +32,7 @@ function updateBarTooltip(bar, opts) {
 
 async function doUpdate(taskGUID) {
 
-    let updateResponse = await fetch(`/task/${taskGUID}`);
+    let updateResponse = await fetch(`/api/task/${taskGUID}`);
      if (updateResponse.ok) {
             let response = await updateResponse.json()
                var bar = $(`#${taskGUID}`);
@@ -64,7 +65,7 @@ async function doUpdate(taskGUID) {
                 bar.width(statusPercentageDisplay);
                 bar.children(".progress-text").text(statusPercentageDisplay);
 
-                if (response.info.state && response.info.state == "SUCCESS") {
+                if (response.state && response.state == "SUCCESS") {
 
                     clearTaskInterval(taskGUID);
                     notify.showNotification("Transfer Completed", response.info.message);
@@ -77,7 +78,7 @@ async function doUpdate(taskGUID) {
         }
 
 async function cancelUpdate(taskID) {
-    let cancelResponse = await fetch(`/task/${taskID}`, { method: 'DELETE'} );
+    let cancelResponse = await fetch(`/api/task/${taskID}`, { method: 'DELETE'} );
     if (cancelResponse.ok) {
         let json = await cancelResponse.json();
         clearTaskInterval(taskID);
@@ -89,12 +90,27 @@ async function cancelUpdate(taskID) {
 function clearTaskInterval(taskID) {
 
     if (taskID) {
-        let storedItem = localStorage.getItem(taskID);
-        if (storedItem) {
-            let task = JSON.parse(storedItem);
-            if (task && task.interval) {
-                clearInterval(task.interval);
+        let itemsInProgress = JSON.parse(localStorage.getItem("itemsInProgress"));
+        if (!itemsInProgress) {
+            return false;
+        }
+        let index = itemsInProgress.indexOf(taskID)
+        if (index > -1) {
+            let itemFound = itemsInProgress.splice(index,1);
+            if (itemsInProgress.length > 0) {
+                localStorage.setItem("itemsInProgress", JSON.stringify(itemsInProgress));
             }
+            else {
+                localStorage.removeItem("itemsInProgress");
+            }
+            let storedItem = localStorage.getItem(taskID);
+                if (storedItem) {
+                    let task = JSON.parse(storedItem);
+                    if (task && task.interval) {
+                        clearInterval(task.interval);
+                        localStorage.removeItem(task);
+                    }
+                }
         }
     }
 }
@@ -114,7 +130,7 @@ async function renderItemInProgress(i) {
     data.section = item.sectionID;
     data.task =  item.task;
 
-    let statusResponse = await fetch(`/task/${data.task}`, {
+    let statusResponse = await fetch(`/api/task/${data.task}`, {
         headers: { 'Content-Type': 'application/json'}
     });
 

@@ -47,9 +47,17 @@ function onTemplateRendered(response) {
         $('#comparison_results').append(response.html);
 }
 
+
+function onSocketConnect() {
+    console.log("Connecting to socket")
+}
+
+function onSocketDisconnect(data) {
+    console.log("disconnecting from socket");
+}
+
     socket = io.connect(`${location.protocol}//${document.domain}/plexsync`);
     socket.on('template_rendered', onTemplateRendered);
-    //socket.on('comparison_done', onComparisonDone);
 
 // register comparison catchalls
 
@@ -60,7 +68,10 @@ function onTemplateRendered(response) {
     socket.on('INTIALIZING', onComparisonEventStep);
     socket.on('CONNECTING', onComparisonEventStep);
     socket.on('SUCCESS', onComparisonDone);
-
-
+    
+    //connection events
+ socket.on('connect', onSocketConnect);
+ socket.on('disconnect', onSocketDisconnect);
 
 module.exports = socket;
+

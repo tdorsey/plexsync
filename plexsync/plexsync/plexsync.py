@@ -18,7 +18,7 @@ from plexsync.base import Base
 from plexsync.thirdparty import ThirdParty, ThirdPartyService
 from distutils.util import strtobool
 
-log = logging.getLogger('plexsync')
+log = logging.getLogger(__name__)
 
 class PlexSync(Base):
 
@@ -159,7 +159,6 @@ class PlexSync(Base):
 
   
     def render(self, message):
-      log = logging.getLogger('plexsync')
       log.debug("Plexsync rendering")
 
     def createPathForMedia(self, media):
@@ -187,10 +186,10 @@ class PlexSync(Base):
 
     def buildMediaInfo(self, serverName, sectionName, guid):
         try:
+                    self.getAccount()
                     log.warn(f"Building media info")
-                    plexsync = PlexSync()
-                    server = plexsync.getServer(serverName)
-                    section = plexsync.getSection(server, sectionName)
+                    server = self.getServer(serverName)
+                    section = self.getSection(server, sectionName)
                     sectionID = section.key
                     log.warn(f"sectionkey = {section.key} {section.type}")
                     results = section.search(guid=guid)
@@ -231,8 +230,8 @@ class PlexSync(Base):
                                         'server': server.friendlyName,
                                         'section': sectionID,
                                         'title': media.title,
-                                        'folderPath': str(plexsync.createPathForMedia(media)),
-                                        'fileName': plexsync.createFilenameForMedia(media)
+                                        'folderPath': str(self.createPathForMedia(media)),
+                                        'fileName': self.createFilenameForMedia(media)
                                         }
                             
                             media_info["destination"] = os.path.join(media_info["folderPath"], media_info["fileName"])
@@ -248,7 +247,6 @@ class PlexSync(Base):
             log.exception(e)
 
     def download(self, media):
-        log = logging.getLogger('plexsync')
         try:
             for part in media.iterParts():
                 url = media._server.url(

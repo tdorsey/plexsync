@@ -72,7 +72,7 @@ function onSelectServer(e) {
     }, 'json');
 }
 
-function compareLibraries() {
+async function compareLibraries() {
     var serverA = $("#serverA").val();
     var serverB = $("#serverB").val();
     var section = $("#section").val();
@@ -81,14 +81,14 @@ function compareLibraries() {
     $("#comparison_results").empty();
     message.hide();
     var endpoint = '/compare/' + serverA + '/' + serverB + '/' + sectionKey;
-    var compareRequest = $.ajax({ url: endpoint  }).done(function(response) {
-	console.log(response);
-	}
-	).fail(
-            function (xhr, status, error) {
-                msg = `${xhr.status}: ${xhr.responseText}`;
+    let compareResponse = await fetch(endpoint);
+        if (!compareResponse.ok) {
+                msg = `${compareResponse.status}: ${compareResponse.statusText}`;
                 message.danger(msg);
-            });
+	    }
+        else {
+            let json = await compareResponse.json() 
+        }
 
 }
 
@@ -130,27 +130,17 @@ function downloadItem(item) {
         });
 
 }
-function transfer(item) {
+async function transfer(item) {
     guid = encodeURIComponent(item.guid);
-    var transferEndpoint = "/transfer";
+    var transferEndpoint = "/api/transfer";
     var trimmed = {
         guid: item.guid,
         server: item.server,
         section: item.sectionID
     }
 
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            type: "POST",
-            url: transferEndpoint,
+    return await fetch(transferEndpoint, { type: "POST",
             data: trimmed,
-            success: function (response, textStatus) {
-                resolve(response);
-            },
-            error: function (jqXHR, textStatus) {
-                reject(jqXHR.responseJSON);
-            },
-        });
     });
 
 }

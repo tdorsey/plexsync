@@ -1,6 +1,8 @@
-import logging
+import logging, sys
 from .plexsync import PlexSync
 log = logging.getLogger(__name__)
+
+
 
 
 # Logging Configuration
@@ -8,7 +10,13 @@ log = logging.getLogger(__name__)
 #logfile = CONFIG.get('log.path')
 #logformat = CONFIG.get('log.format', '%(asctime)s %(module)12s:%(lineno)-4s %(levelname)-9s %(message)s')
 loglevel = logging.DEBUG
-loghandler = logging.NullHandler()
+#loghandler = logging.NullHandler()
+
+log.addHandler(logging.StreamHandler(sys.stdout))
+FORMAT = "[%(level)s in %(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+formatter = logging.Formatter(FORMAT)
+log.formatter = formatter
+
 
 #if logfile:  # pragma: no cover
 #    logbackups = CONFIG.get('log.backup_count', 3, int)
@@ -16,7 +24,7 @@ loghandler = logging.NullHandler()
 #    loghandler = RotatingFileHandler(os.path.expanduser(logfile), 'a', logbytes, logbackups)
 
 #loghandler.setFormatter(logging.Formatter(logformat))
-log.addHandler(loghandler)
+#log.addHandler(loghandler)
 log.setLevel(loglevel)
 #logfilter = SecretsFilter()
 #if CONFIG.get('log.show_secrets', '').lower() != 'true':
