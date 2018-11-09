@@ -59,7 +59,6 @@ RUN pip install -e /plexsync/
 
 WORKDIR /plexsync_flask/plexsync_flask
 
-COPY webserver/ /plexsync_flask/webserver/
 COPY tests/ /plexsync_flask/tests/
 
 WORKDIR /plexsync_flask
