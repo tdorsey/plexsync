@@ -50,7 +50,6 @@ RUN mkdir -p static/images && cp node_modules/octicons/build/svg/* static/images
 WORKDIR /
 COPY celeryconfig.py /plexsync_flask/
 COPY config.py /plexsync_flask/
-COPY manage.py /plexsync_flask/
 
 COPY entrypoint.sh /
 
