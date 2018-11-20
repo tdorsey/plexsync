@@ -1,10 +1,4 @@
-#!/bin/sh
-#echo "cd cd"
-#cd /plexsync_flask
-#echo `pwd`
-#python3 manage.py "celery"
-#python3 manage.py "runserver"
+#!/bin/bash
 
-/usr/local/bin/python3 manage.py celery &
-nohup  /usr/local/bin/python3 manage.py runserver -h 0.0.0.0
-#echo "runserver"
+celery worker -Ofair -A plexsync_flask &
+nohup  flask run plexsync_flask --host 0.0.0.0

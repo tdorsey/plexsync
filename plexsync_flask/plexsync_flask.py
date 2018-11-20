@@ -27,7 +27,7 @@ def login():
     session['password'] = request.form['password']
 
     try:
-        plexsync = PlexSync()
+        plexsync = PlexSync.PlexSync()
         plexsync.getAccount()
         return redirect(url_for('main.home', _scheme='https', _external=True), code=303)
     except Exception as e:
@@ -39,7 +39,7 @@ def home():
    try:
         token = session['token']
         session.permanent = True
-        plexsync = PlexSync()
+        plexsync = PlexSync.PlexSync()
         if token:
             plexAccount = plexsync.getAccount(token=token)
         else:
@@ -75,7 +75,7 @@ def exchangePinForAuth(clientId, pinId):
 @main.route('/servers/<string:serverName>', methods=['GET','POST'])
 def sections(serverName):
     current_app.logger.debug(f"routing for {serverName}")
-    plexsync = PlexSync()
+    plexsync = PlexSync.PlexSync()
     plexsync.getAccount()
     server = plexsync.getServer(serverName)
     sections = plexsync.getSections(server)
@@ -89,16 +89,10 @@ def sections(serverName):
     with current_app.app_context():
         return jsonify(sortedSections)
 
-
-@main.route('/emit/<string:message>', methods=['GET','POST'])
-def emit(message):
-    s = emit_task.delay(message)
-    return jsonify(s.info)
-
 @main.route('/servers/<string:serverName>/<string:section>', methods=['GET','POST'])
 def media(serverName, section):
     current_app.logger.debug(f"routing for {serverName} - {section}")
-    plexsync = PlexSync()
+    plexsync = PlexSync.PlexSync()
     plexsync.getAccount()
     
     server = plexsync.getServer(serverName)
@@ -114,7 +108,7 @@ def search():
     guid = urllib.parse.unquote(guid)
     server = request.form['server']
     section = request.form['section']
-    plexsync = PlexSync()
+    plexsync = PlexSync.PlexSync()
     plexsync.getAccount()
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
@@ -129,7 +123,7 @@ def download():
     guid = urllib.parse.unquote(guid)
     server = request.form['server']
     section = request.form['section']
-    plexsync = PlexSync()
+    plexsync = PlexSync.PlexSync()
     plexsync.getAccount()
     theirServer = plexsync.getServer(server)
     section = theirServer.library.sectionByID(section)
@@ -143,7 +137,7 @@ def transfer():
         sectionID = request.form['section']
         guid = request.form['guid']
         guid = urllib.parse.unquote(guid)
-        plexsync = PlexSync()
+        plexsync = PlexSync.PlexSync()
         plexsync.getAccount()
 
         ownedServers = plexsync.getOwnedServers()
@@ -186,7 +180,7 @@ def renderSingleItemPath(serverName, sectionName, guid):
             serverName = urllib.parse.unquote(serverName)
             sectionName = urllib.parse.unquote(sectionName)
             guid = urllib.parse.unquote(guid)
-            plexsync = PlexSync()
+            plexsync = PlexSync.PlexSync()
             plexsync.getAccount()
             server = plexsync.getServer(serverName)
             section = plexsync.getSection(server, sectionName)
@@ -200,9 +194,8 @@ def renderSingleItemPath(serverName, sectionName, guid):
 def compare(yourServerName, theirServerName, sectionKey=None):
     try:
         with current_app.app_context():
-            plexsync = PlexSync()
+            plexsync = PlexSync.PlexSync()
             plexsync.getAccount()
-            yourServer = plexsync.getServer(yourServerName)
             theirServer = plexsync.getServer(theirServerName)
 
             section = plexsync.getSection(theirServer, sectionKey)
@@ -233,35 +226,5 @@ def compare(yourServerName, theirServerName, sectionKey=None):
 #    if as_json():
  #   return jsonify(result_list)
   #  else:
-        return render_template('media.html', media=result_list)
-
-@main.route('/compareResults/<string:yourServerName>/<string:theirServerName>/<string:sectionName>', methods=['GET'])
-def compareResults(yourServerName, theirServerName, sectionName=None):
-
-    plexsync = PlexSync()
-    plexsync.getAccount(session['username'], session['password'])
-    sectionsToCompare = []
-
-    if not sectionName:
-        settings = plexsync.getSettings()
-        sectionsToCompare = settings.get('sections', 'sections').split(",")
-    else:
-        sectionsToCompare.append(sectionName)
-
-    yourServer = plexsync.getServer(yourServerName)
-    theirServer = plexsync.getServer(theirServerName)
-
-    for section in sectionsToCompare:
-        yourLibrary = plexsync.getResults(yourServer, section)
-        theirLibrary = plexsync.getResults(theirServer, section)
-
-        results = plexsync.compareLibrariesAsResults(yourLibrary, theirLibrary)
-
-        current_app.logger.debug(f"{section} {len(yourLibrary)} in yours {len(theirLibrary)} in theirs")
-        current_app.logger.debug(f"{len(results)} your diff")
-
-    return jsonify(results)
-
-def ack():
-    current_app.logger.warning('message was received!')
+ #   return render_template('media.html', media=result_list)
 
